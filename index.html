@@ -265,7 +265,7 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIG ─────────────────────────────────────────────────────────────────────
+// -- CONFIG ---------------------------------------------------------------------
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU3vZigwQAl6JcipRuJXi4cIHFOkv6nL-7uUWCRQaGUzwD37tZ2dBvd9j0MUYaRjGG/exec';
 const PIN = 'URG1';
 const CAMAS_OBS = 10;
@@ -273,14 +273,14 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const DESTINOS = ['Hospitalización','Quirófano','Domicilio','Alta voluntaria','Defunción','Referencia','Observación','Pendiente'];
 const CODIGOS = ['Ninguno','Oro / Mater','Infarto','Sepsis','Cerebro'];
 
-// ── ESTADO ────────────────────────────────────────────────────────────────────
+// -- ESTADO --------------------------------------------------------------------
 let cur = new Date(); cur.setHours(0,0,0,0);
 let pinOK = false, pinCB = null;
 let nid = 1;
 let DB = { censo:[], obs:[] };
 const GAS_CONFIGURADO = GAS_URL !== 'TU_URL_URGENCIAS_AQUI';
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
+// -- UTILS ---------------------------------------------------------------------
 function dk(d){ if(typeof d==='string') d=new Date(d+'T12:00:00'); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmt(d){ const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']; const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return days[d.getDay()]+', '+d.getDate()+' de '+m[d.getMonth()]+' de '+d.getFullYear(); }
 function toast(msg,tipo='success'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+tipo; setTimeout(()=>t.className='toast',3000); }
@@ -301,18 +301,18 @@ function triageChip(t){ if(!t) return '—'; const m={Rojo:'triage-rojo',Amarill
 // Calcular edad desde fecha de nacimiento
 function calcEdadLocal(fnac){ if(!fnac) return ''; const n=new Date(fnac+'T12:00'), h=new Date(); let e=h.getFullYear()-n.getFullYear(); if(h.getMonth()-n.getMonth()<0||(h.getMonth()-n.getMonth()===0&&h.getDate()<n.getDate())) e--; return e>=0?e:''; }
 
-// ── PIN ────────────────────────────────────────────────────────────────────────
+// -- PIN ------------------------------------------------------------------------
 function requirePin(cb){ if(pinOK){cb();return;} pinCB=cb; document.getElementById('pinInput').value=''; document.getElementById('pinError').textContent=''; document.getElementById('pinModal').classList.add('open'); setTimeout(()=>document.getElementById('pinInput').focus(),100); }
 function verifyPin(){ if(document.getElementById('pinInput').value===PIN){ pinOK=true; document.getElementById('pinModal').classList.remove('open'); document.getElementById('modeLabel').textContent='✏ Editor'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.25)'; document.getElementById('lockBtn').textContent='🔓 Salir'; toast('Modo edición activado'); if(pinCB){pinCB();pinCB=null;} } else { document.getElementById('pinError').textContent='PIN incorrecto'; document.getElementById('pinInput').value=''; } }
 function closePinModal(){ document.getElementById('pinModal').classList.remove('open'); pinCB=null; }
 function toggleLock(){ if(pinOK){ pinOK=false; document.getElementById('modeLabel').textContent='Solo lectura'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.2)'; document.getElementById('lockBtn').textContent='🔒 PIN'; toast('Modo solo lectura'); } else requirePin(()=>{}); }
 
-// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+// -- NAVEGACI?N ----------------------------------------------------------------
 function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); actualizarFechas(); if(id==='censo') renderCenso(); if(id==='observacion') renderObs(); if(id==='concentrado') renderConcentrado(); }
 function cambiarDia(d){ cur.setDate(cur.getDate()+d); actualizarFechas(); renderCenso(); renderObs(); }
 function actualizarFechas(){ const l=fmt(cur); ['dateLabel','dateLabelObs'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;}); }
 
-// ── PERSISTENCIA ──────────────────────────────────────────────────────────────
+// -- PERSISTENCIA --------------------------------------------------------------
 function guardarLocal(){ try{ localStorage.setItem('urg_db_v1',JSON.stringify({db:DB,nid,ts:Date.now()})); }catch(e){} }
 function cargarLocal(){ try{ const r=localStorage.getItem('urg_db_v1'); if(!r) return false; const p=JSON.parse(r); if(p.db){['censo','obs'].forEach(s=>{if(Array.isArray(p.db[s]))DB[s]=p.db[s];}); } if(p.nid) nid=p.nid; return true; }catch(e){return false;} }
 function recalcNid(){ const ids=[...DB.censo,...DB.obs].map(x=>Number(x.id)||0); nid=ids.length?Math.max(...ids)+1:1; }
@@ -356,7 +356,7 @@ async function cargarDatos(){
   hideLoader(); actualizarFechas(); renderCenso(); renderObs();
 }
 
-// ── RENDER CENSO ──────────────────────────────────────────────────────────────
+// -- RENDER CENSO --------------------------------------------------------------
 function renderCenso(){
   const hoy=dk(cur);
   const data=DB.censo.filter(r=>r.fecha===hoy).sort((a,b)=>Number(a.num)||0-(Number(b.num)||0));
@@ -364,7 +364,7 @@ function renderCenso(){
   const empty=document.getElementById('censo-empty');
   document.getElementById('censo-count').textContent=data.length+' paciente'+(data.length!==1?'s':'');
 
-  // Stats del día
+  // Stats del d?a
   const rojos=data.filter(r=>r.triage==='Rojo').length;
   const amarillos=data.filter(r=>r.triage==='Amarillo').length;
   const verdes=data.filter(r=>r.triage==='Verde').length;
@@ -410,7 +410,7 @@ function renderCenso(){
   }).join('');
 }
 
-// ── RENDER OBSERVACIÓN ────────────────────────────────────────────────────────
+// -- RENDER OBSERVACI?N --------------------------------------------------------
 function renderObs(){
   const hoy=dk(cur);
   const activos=DB.obs.filter(r=>{
@@ -462,7 +462,7 @@ function renderObs(){
   }).join('');
 }
 
-// ── MODAL CENSO ───────────────────────────────────────────────────────────────
+// -- MODAL CENSO ---------------------------------------------------------------
 function abrirModal(id){
   const rec=id?DB.censo.find(r=>r.id===id)||{}:{};
   const triajeVal=rec.triage||'';
@@ -569,7 +569,7 @@ async function guardarCenso(id){
   toast('✓ Registro guardado');
 }
 
-// ── MODAL OBSERVACIÓN ─────────────────────────────────────────────────────────
+// -- MODAL OBSERVACI?N ---------------------------------------------------------
 function abrirModalObs(id, camaPreset){
   const rec=id?DB.obs.find(r=>r.id===id)||{}:{};
   const camaOpts=Array.from({length:CAMAS_OBS},(_,i)=>`<option value="${i+1}"${(rec.cama==i+1||(camaPreset&&camaPreset===i+1))?' selected':''}>Cama ${i+1}</option>`).join('');
@@ -633,7 +633,7 @@ async function guardarObs(id){
   toast('✓ Paciente guardado');
 }
 
-// ── ELIMINAR ──────────────────────────────────────────────────────────────────
+// -- ELIMINAR ------------------------------------------------------------------
 async function eliminar(id,seccion){
   if(!confirm('¿Eliminar este registro?')) return;
   DB[seccion]=DB[seccion].filter(r=>r.id!==id);
@@ -643,7 +643,7 @@ async function eliminar(id,seccion){
   toast('Registro eliminado','error');
 }
 
-// ── EXPORTAR CSV ──────────────────────────────────────────────────────────────
+// -- EXPORTAR CSV --------------------------------------------------------------
 function exportarCSV(){
   const hoy=dk(cur);
   const data=DB.censo.filter(r=>r.fecha===hoy);
@@ -656,7 +656,7 @@ function exportarCSV(){
   a.click(); toast('CSV exportado');
 }
 
-// ── CONCENTRADO ───────────────────────────────────────────────────────────────
+// -- CONCENTRADO ---------------------------------------------------------------
 function renderConcentrado(){
   const mes=parseInt(document.getElementById('con-mes').value);
   const anio=parseInt(document.getElementById('con-anio').value);
@@ -670,7 +670,7 @@ function renderConcentrado(){
   const diasMes=new Date(anio,mes+1,0).getDate();
   const diasConAct=[...new Set(censo.map(r=>r.fecha).filter(Boolean))].length||1;
 
-  // ── TIEMPOS ────────────────────────────────────────────────────────────────
+  // -- TIEMPOS ----------------------------------------------------------------
   const tiemposRegTriage=censo.map(r=>minEntre(r.horaRegistro,r.horaTriage)).filter(v=>v!==null&&v>=0);
   const tiemposTriageAten=censo.map(r=>minEntre(r.horaTriage,r.horaAtencion)).filter(v=>v!==null&&v>=0);
   const tiemposEstancia=censo.map(r=>minEntre(r.horaRegistro,r.horaEgreso)).filter(v=>v!==null&&v>0);
@@ -678,35 +678,35 @@ function renderConcentrado(){
   const promTriageAten=tiemposTriageAten.length?Math.round(tiemposTriageAten.reduce((a,b)=>a+b,0)/tiemposTriageAten.length):null;
   const promEstancia=tiemposEstancia.length?Math.round(tiemposEstancia.reduce((a,b)=>a+b,0)/tiemposEstancia.length):null;
 
-  // ── TRIAGE ─────────────────────────────────────────────────────────────────
+  // -- TRIAGE -----------------------------------------------------------------
   const rojos=censo.filter(r=>r.triage==='Rojo').length;
   const amarillos=censo.filter(r=>r.triage==='Amarillo').length;
   const verdes=censo.filter(r=>r.triage==='Verde').length;
   const defTriaje=censo.filter(r=>r.destino==='Defunción').length;
 
-  // ── CAMBIOS DE TRIAGE ──────────────────────────────────────────────────────
+  // -- CAMBIOS DE TRIAGE ------------------------------------------------------
   const cambioAm=censo.filter(r=>r.cambioTriage==='Amarillo').length;
   const cambioRo=censo.filter(r=>r.cambioTriage==='Rojo').length;
   const totalCambios=cambioAm+cambioRo;
 
-  // ── PRIMERA VEZ ────────────────────────────────────────────────────────────
+  // -- PRIMERA VEZ ------------------------------------------------------------
   const primeraVez=censo.filter(r=>r.primeraVez==='Sí').length;
 
-  // ── MORTALIDAD ─────────────────────────────────────────────────────────────
+  // -- MORTALIDAD -------------------------------------------------------------
   const defunciones=censo.filter(r=>r.destino==='Defunción').length;
   const pctMort=censo.length?Math.round(defunciones/censo.length*1000)/10:0;
 
-  // ── EVENTOS ADVERSOS ───────────────────────────────────────────────────────
+  // -- EVENTOS ADVERSOS -------------------------------------------------------
   const eventosAdv=censo.filter(r=>r.eventoAdverso==='Sí').length;
 
-  // ── CÓDIGOS ────────────────────────────────────────────────────────────────
+  // -- C?DIGOS ----------------------------------------------------------------
   const codOro=censo.filter(r=>r.codigo==='Oro / Mater').length;
   const codInfarto=censo.filter(r=>r.codigo==='Infarto').length;
   const codSepsis=censo.filter(r=>r.codigo==='Sepsis').length;
   const codCerebro=censo.filter(r=>r.codigo==='Cerebro').length;
   const totalCodigos=codOro+codInfarto+codSepsis+codCerebro;
 
-  // ── DESTINOS ───────────────────────────────────────────────────────────────
+  // -- DESTINOS ---------------------------------------------------------------
   const destHosp=censo.filter(r=>r.destino==='Hospitalización').length;
   const destQx=censo.filter(r=>r.destino==='Quirófano').length;
   const destDom=censo.filter(r=>r.destino==='Domicilio').length;
@@ -715,14 +715,14 @@ function renderConcentrado(){
   const pctHosp=censo.length?Math.round(destHosp/censo.length*1000)/10:0;
   const pctQx=censo.length?Math.round(destQx/censo.length*1000)/10:0;
 
-  // ── REINGRESOS (mismo paciente en 72h) ─────────────────────────────────────
+  // -- REINGRESOS (mismo paciente en 72h) -------------------------------------
   const reingresos=censo.filter(r=>{
     if(!r.fecha||!r.paciente) return false;
     const d0=new Date(r.fecha+'T12:00');
     return censo.some(o=>o.id!==r.id&&o.paciente===r.paciente&&Math.abs(new Date(o.fecha+'T12:00')-d0)<=72*3600000);
   }).length/2; // dividir entre 2 para no contar doble
 
-  // ── OBSERVACIÓN ────────────────────────────────────────────────────────────
+  // -- OBSERVACI?N ------------------------------------------------------------
   const egresosObs=obs.filter(r=>r.fechaEgreso).length;
   const diasPacObs=obs.reduce((s,r)=>{
     const fi=r.fechaIngreso?new Date(r.fechaIngreso+'T12:00'):null; if(!fi) return s;
@@ -834,7 +834,7 @@ function renderConcentrado(){
     </div>`;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// -- INIT ----------------------------------------------------------------------
 actualizarFechas();
 cargarDatos();
 </script>
