@@ -266,7 +266,7 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
 
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────────────
-const GAS_URL = 'TU_URL_GAS_AQUI';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU3vZigwQAl6JcipRuJXi4cIHFOkv6nL-7uUWCRQaGUzwD37tZ2dBvd9j0MUYaRjGG/exec';
 const PIN = 'URG1';
 const CAMAS_OBS = 10;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -278,7 +278,7 @@ let cur = new Date(); cur.setHours(0,0,0,0);
 let pinOK = false, pinCB = null;
 let nid = 1;
 let DB = { censo:[], obs:[] };
-const GAS_CONFIGURADO = GAS_URL !== 'TU_URL_GAS_AQUI';
+const GAS_CONFIGURADO = GAS_URL !== 'TU_URL_URGENCIAS_AQUI';
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function dk(d){ if(typeof d==='string') d=new Date(d+'T12:00:00'); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
