@@ -419,7 +419,7 @@ function renderObs(){
     if(r.fechaEgreso&&r.fechaEgreso<hoy) return false;
     return true;
   });
-  document.getElementById('obs-count').textContent=activos.length+' paciente'+(activos.length!==1?'s')+' · '+(CAMAS_OBS-activos.length)+' camas libres';
+  document.getElementById('obs-count').textContent=activos.length+' paciente'+(activos.length!==1?'s':'')+' - '+(CAMAS_OBS-activos.length)+' camas libres';
 
   // Grid de camas
   const camasGrid=document.getElementById('camasGrid');
@@ -746,7 +746,7 @@ function renderConcentrado(){
 
   document.getElementById('concentrado-body').innerHTML=`
     <div style="font-size:16px;font-weight:600;color:var(--gris7);margin-bottom:14px">
-      ${MESES[mes]} ${anio} &nbsp;·&nbsp; <span style="font-size:12px;font-weight:400;color:var(--gris4)">${diasConAct} días con actividad · ${diasMes} días en el mes</span>
+      ${MESES[mes]} ${anio} &nbsp;|&nbsp; <span style="font-size:12px;font-weight:400;color:var(--gris4)">${diasConAct} días con actividad - ${diasMes} días en el mes</span>
     </div>
 
     <!-- RESUMEN -->
@@ -760,8 +760,8 @@ function renderConcentrado(){
     <!-- TIEMPOS -->
     <div class="ind-grid-3" style="margin-bottom:12px">
       <div class="group-title" style="grid-column:1/-1">⏱ Tiempos de Atención</div>
-      ${ic('var(--rojo)','Registro → Triage','promedio de minutos',fmtMin(promRegTriage),`Calculado sobre ${tiemposRegTriage.length} registros con ambas horas`,promRegTriage!==null?Math.min(promRegTriage/30*100,100):0)}
-      ${ic('var(--amarillo)','Triage → Atención médica','promedio de minutos',fmtMin(promTriageAten),`Calculado sobre ${tiemposTriageAten.length} registros · Meta: <30 min para Rojo`,promTriageAten!==null?Math.min(promTriageAten/60*100,100):0)}
+      ${ic('var(--rojo)','Registro -> Triage','promedio de minutos',fmtMin(promRegTriage),`Calculado sobre ${tiemposRegTriage.length} registros con ambas horas`,promRegTriage!==null?Math.min(promRegTriage/30*100,100):0)}
+      ${ic('var(--amarillo)','Triage -> Atención médica','promedio de minutos',fmtMin(promTriageAten),`Calculado sobre ${tiemposTriageAten.length} registros - Meta: <30 min para Rojo`,promTriageAten!==null?Math.min(promTriageAten/60*100,100):0)}
       ${ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(promEstancia),`Calculado sobre ${tiemposEstancia.length} registros con hora registro y egreso`,promEstancia!==null?Math.min(promEstancia/480*100,100):0)}
     </div>
 
@@ -782,7 +782,7 @@ function renderConcentrado(){
       <div class="ind-card">
         <div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Cambios en Clasificación de Triage</span></div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-          ${[['→ Amarillo',cambioAm,'var(--amarillo)'],['→ Rojo',cambioRo,'var(--rojo)'],['Total',totalCambios,'var(--gris6)']].map(([n,v,c])=>`
+          ${[['-> Amarillo',cambioAm,'var(--amarillo)'],['-> Rojo',cambioRo,'var(--rojo)'],['Total',totalCambios,'var(--gris6)']].map(([n,v,c])=>`
           <div style="flex:1;min-width:70px;text-align:center">
             <div style="font-size:10px;color:${c};font-weight:700;margin-bottom:2px">${n}</div>
             <div style="font-size:22px;font-weight:700;color:${c}">${v}</div>
@@ -830,7 +830,7 @@ function renderConcentrado(){
       <div class="group-title" style="grid-column:1/-1">🛏 Área de Observación</div>
       ${ic('var(--az2)','% Ocupación Observación','(pac-día / camas×días) × 100',pctOcupObs+'%',`${diasPacObs} pac-día de ${CAMAS_OBS*diasMes} disponibles (${CAMAS_OBS} camas × ${diasMes} días)`,pctOcupObs)}
       ${ic('var(--verde)','Estancia promedio Observación','días estancia / egresos',promEstObs+' días',`${egresosObs} egresos en el mes`,Math.min(promEstObs/7*100,100))}
-      ${ic('var(--morado)','Total ingresos Observación','suma del mes',obs.length,`${egresosObs} egresos · ${obs.length-egresosObs} activos al fin del mes`,Math.min(obs.length/CAMAS_OBS*100,100))}
+      ${ic('var(--morado)','Total ingresos Observación','suma del mes',obs.length,`${egresosObs} egresos - ${obs.length-egresosObs} activos al fin del mes`,Math.min(obs.length/CAMAS_OBS*100,100))}
     </div>`;
 }
 
@@ -838,6 +838,5 @@ function renderConcentrado(){
 actualizarFechas();
 cargarDatos();
 </script>
-
 </body>
 </html>
