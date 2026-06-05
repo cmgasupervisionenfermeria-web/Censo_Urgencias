@@ -294,8 +294,8 @@ function minEntre(h1, h2){
   const diff=(c*60+d)-(a*60+b);
   return diff>=0?diff:diff+1440;
 }
-function fmtMin(m){ if(m===null||m===undefined) return '—'; const h=Math.floor(m/60), min=m%60; return h>0?`${h}h ${min}m`:`${min}m`; }
-function triageChip(t){ if(!t) return '—'; const m={Rojo:'triage-rojo',Amarillo:'triage-amarillo',Verde:'triage-verde'}; return `<span class="${m[t]||''}">${t}</span>`; }
+function fmtMin(m){ if(m===null||m===undefined) return '-'; const h=Math.floor(m/60), min=m%60; return h>0?`${h}h ${min}m`:`${min}m`; }
+function triageChip(t){ if(!t) return '-'; const m={Rojo:'triage-rojo',Amarillo:'triage-amarillo',Verde:'triage-verde'}; return `<span class="${m[t]||''}">${t}</span>`; }
 
 // Calcular edad desde fecha de nacimiento
 function calcEdadLocal(fnac){ if(!fnac) return ''; const n=new Date(fnac+'T12:00'), h=new Date(); let e=h.getFullYear()-n.getFullYear(); if(h.getMonth()-n.getMonth()<0||(h.getMonth()-n.getMonth()===0&&h.getDate()<n.getDate())) e--; return e>=0?e:''; }
@@ -329,7 +329,7 @@ async function apiCall(payload){
     const data=await r.json();
     if(data.ok) guardarLocal();
     return data;
-  }catch(e){ toast('⚠ Sin conexión — guardado localmente','error'); return{ok:false}; }
+  }catch(e){ toast('⚠ Sin conexión - guardado localmente','error'); return{ok:false}; }
 }
 
 async function cargarDatos(){
@@ -381,30 +381,30 @@ function renderCenso(){
   empty.style.display='none';
   tbody.innerHTML=data.map(r=>{
     const estMin=minEntre(r.horaRegistro,r.horaEgreso);
-    const estH=estMin!==null?Math.round(estMin/60*10)/10:'—';
+    const estH=estMin!==null?Math.round(estMin/60*10)/10:'-';
     return `<tr onclick="requirePin(()=>abrirModal(${r.id}))">
-      <td style="font-weight:600;color:var(--gris4)">${r.num||'—'}</td>
-      <td style="font-size:11px">${r.fecha||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaRegistro||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaTriage||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaAtencion||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaEgreso||'—'}</td>
+      <td style="font-weight:600;color:var(--gris4)">${r.num||'-'}</td>
+      <td style="font-size:11px">${r.fecha||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaRegistro||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaTriage||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaAtencion||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaEgreso||'-'}</td>
       <td>${triageChip(r.triage)}</td>
-      <td>${r.cambioTriage?`<span style="font-size:11px;color:var(--naranja)">↑${r.cambioTriage}</span>`:'—'}</td>
-      <td style="font-weight:500;max-width:130px">${r.paciente||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'—'}</td>
-      <td style="text-align:center">${r.edad||'—'}</td>
-      <td style="text-align:center">${r.sexo||'—'}</td>
-      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'—'}</td>
-      <td style="font-size:11px">${r.codigo&&r.codigo!=='Ninguno'?`<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">${r.codigo}</span>`:'—'}</td>
-      <td style="font-size:11px">${r.aseguradora||'—'}</td>
-      <td style="text-align:center">${r.primeraVez==='Sí'?'✓':'—'}</td>
-      <td style="text-align:center">${estH!=='—'?estH+' h':estH}</td>
-      <td style="text-align:center">${r.eventoAdverso==='Si'?`<span style="color:var(--rojo);font-weight:700" title="${r.eventoAdversoTipo||''}">⚠ ${r.eventoAdversoTipo||'Sí'}</span>`:'—'}</td>
-      <td style="font-size:11px">${r.medico||'—'}</td>
-      <td style="font-size:11px">${r.interconsulta||'—'}</td>
-      <td style="font-size:11px">${r.referidoPor||'—'}</td>
-      <td style="font-size:11px;font-weight:500">${r.destino||'—'}</td>
+      <td>${r.cambioTriage?`<span style="font-size:11px;color:var(--naranja)">↑${r.cambioTriage}</span>`:'-'}</td>
+      <td style="font-weight:500;max-width:130px">${r.paciente||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'-'}</td>
+      <td style="text-align:center">${r.edad||'-'}</td>
+      <td style="text-align:center">${r.sexo||'-'}</td>
+      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'-'}</td>
+      <td style="font-size:11px">${r.codigo&&r.codigo!=='Ninguno'?`<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">${r.codigo}</span>`:'-'}</td>
+      <td style="font-size:11px">${r.aseguradora||'-'}</td>
+      <td style="text-align:center">${r.primeraVez==='Sí'?'✓':'-'}</td>
+      <td style="text-align:center">${estH!=='-'?estH+' h':estH}</td>
+      <td style="text-align:center">${r.eventoAdverso==='Si'?`<span style="color:var(--rojo);font-weight:700" title="${r.eventoAdversoTipo||''}">⚠ ${r.eventoAdversoTipo||'Sí'}</span>`:'-'}</td>
+      <td style="font-size:11px">${r.medico||'-'}</td>
+      <td style="font-size:11px">${r.interconsulta||'-'}</td>
+      <td style="font-size:11px">${r.referidoPor||'-'}</td>
+      <td style="font-size:11px;font-weight:500">${r.destino||'-'}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>eliminar(${r.id},'censo'))" style="color:var(--rojo)">✕</button></td>
     </tr>`;
   }).join('');
@@ -430,7 +430,7 @@ function renderObs(){
     html+=`<div class="cama-card ${cls}" onclick="requirePin(()=>abrirModalObs(${pac?pac.id:'null'},${i}))">
       <div class="cama-num">Cama ${i}</div>
       ${pac
-        ?`<div class="cama-pac">${pac.paciente||'Sin nombre'}</div><div class="cama-diag">${pac.diagnostico||'—'}</div>`
+        ?`<div class="cama-pac">${pac.paciente||'Sin nombre'}</div><div class="cama-diag">${pac.diagnostico||'-'}</div>`
         :`<div class="cama-libre">Disponible</div>`}
     </div>`;
   }
@@ -445,18 +445,18 @@ function renderObs(){
     const dias=r.fechaIngreso?Math.max(0,Math.round((new Date(hoy+'T12:00')-new Date(r.fechaIngreso+'T12:00'))/(1000*60*60*24))):0;
     const egresaHoy=r.fechaEgreso===hoy;
     return `<tr style="${egresaHoy?'background:#F0FDF4':''}" onclick="requirePin(()=>abrirModalObs(${r.id}))">
-      <td><b>Cama ${r.cama||'—'}</b></td>
-      <td style="font-size:11px">${r.fechaIngreso||'—'}</td>
+      <td><b>Cama ${r.cama||'-'}</b></td>
+      <td style="font-size:11px">${r.fechaIngreso||'-'}</td>
       <td style="text-align:center;font-weight:600">${dias}</td>
-      <td style="font-weight:500">${r.paciente||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'—'}</td>
-      <td style="text-align:center">${r.edad||'—'}</td>
-      <td style="text-align:center">${r.sexo||'—'}</td>
-      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'—'}</td>
-      <td style="font-size:11px">${r.medico||'—'}</td>
+      <td style="font-weight:500">${r.paciente||'-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'-'}</td>
+      <td style="text-align:center">${r.edad||'-'}</td>
+      <td style="text-align:center">${r.sexo||'-'}</td>
+      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'-'}</td>
+      <td style="font-size:11px">${r.medico||'-'}</td>
       <td>${triageChip(r.triage)}</td>
-      <td style="font-size:11px">${r.destino||'—'}</td>
-      <td style="font-size:11px">${egresaHoy?`<span style="color:var(--verde);font-weight:600">✓ Hoy ${r.horaEgreso||''}</span>`:r.fechaEgreso||'—'}</td>
+      <td style="font-size:11px">${r.destino||'-'}</td>
+      <td style="font-size:11px">${egresaHoy?`<span style="color:var(--verde);font-weight:600">✓ Hoy ${r.horaEgreso||''}</span>`:r.fechaEgreso||'-'}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>eliminar(${r.id},'obs'))" style="color:var(--rojo)">✕</button></td>
     </tr>`;
   }).join('');
@@ -467,7 +467,7 @@ function abrirModal(id){
   const rec=id?DB.censo.find(r=>r.id===id)||{}:{};
   const triajeVal=rec.triage||'';
   document.getElementById('modalCensoContent').innerHTML=`
-    <div class="modal-title">${id?'Editar registro':'Nuevo paciente — Urgencias'}
+    <div class="modal-title">${id?'Editar registro':'Nuevo paciente - Urgencias'}
       <button class="modal-close" onclick="closeModal('modalCenso')">×</button>
     </div>
     <div class="section-lbl">Datos del registro</div>
@@ -478,10 +478,10 @@ function abrirModal(id){
       <div class="form-group"><label>H. Atención médica</label><input type="time" id="c-haten" value="${rec.horaAtencion||''}"></div>
       <div class="form-group"><label>H. Egreso</label><input type="time" id="c-hegr" value="${rec.horaEgreso||''}"></div>
       <div class="form-group"><label>¿Primera vez?</label>
-        <select id="c-pvez"><option value="">—</option><option${rec.primeraVez==='Sí'?' selected':''}>Sí</option><option${rec.primeraVez==='No'?' selected':''}>No</option></select>
+        <select id="c-pvez"><option value="">-</option><option${rec.primeraVez==='Sí'?' selected':''}>Sí</option><option${rec.primeraVez==='No'?' selected':''}>No</option></select>
       </div>
     </div>
-    <div class="section-lbl">Triage — Semáforo</div>
+    <div class="section-lbl">Triage - Semáforo</div>
     <div class="triage-btns">
       <button class="triage-btn rojo${triajeVal==='Rojo'?' selected':''}" onclick="selTriage('Rojo',this)">🔴 Rojo<br><span style="font-size:10px;font-weight:400">Crítico</span></button>
       <button class="triage-btn amarillo${triajeVal==='Amarillo'?' selected':''}" onclick="selTriage('Amarillo',this)">🟡 Amarillo<br><span style="font-size:10px;font-weight:400">Urgente</span></button>
@@ -490,7 +490,7 @@ function abrirModal(id){
     <input type="hidden" id="c-triage" value="${triajeVal}">
     <div style="margin-top:10px" class="form-grid">
       <div class="form-group"><label>Cambio en clasificación de Triage</label>
-        <select id="c-cambiotriage"><option value="">— Sin cambio —</option><option${rec.cambioTriage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.cambioTriage==='Rojo'?' selected':''}>Rojo</option></select>
+        <select id="c-cambiotriage"><option value="">- Sin cambio -</option><option${rec.cambioTriage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.cambioTriage==='Rojo'?' selected':''}>Rojo</option></select>
       </div>
       <div class="form-group"><label>Código activado</label>
         <select id="c-codigo">${CODIGOS.map(c=>`<option${rec.codigo===c?' selected':''}>${c}</option>`).join('')}</select>
@@ -504,7 +504,7 @@ function abrirModal(id){
       <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="${rec.fechaNac||''}" onchange="document.getElementById('c-edad').value=calcEdadLocal(this.value)"></div>
       <div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="${rec.edad||''}" min="0" placeholder="Calculada automáticamente"></div>
       <div class="form-group"><label>Sexo</label>
-        <select id="c-sexo"><option value="">—</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select>
+        <select id="c-sexo"><option value="">-</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select>
       </div>
       <div class="form-group full"><label>Diagnóstico</label><input id="c-diag" value="${rec.diagnostico||''}"></div>
       <div class="form-group"><label>Aseguradora</label><input id="c-aseg" value="${rec.aseguradora||''}"></div>
@@ -518,12 +518,12 @@ function abrirModal(id){
         <select id="c-dest">${DESTINOS.map(d=>`<option${rec.destino===d?' selected':''}>${d}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label>Evento adverso</label>
-        <select id="c-ev" onchange="toggleEvAdverso()"><option value="">—</option><option${rec.eventoAdverso==='No'?' selected':''}>No</option><option${rec.eventoAdverso==='Si'?' selected':''}>Si</option></select>
+        <select id="c-ev" onchange="toggleEvAdverso()"><option value="">-</option><option${rec.eventoAdverso==='No'?' selected':''}>No</option><option${rec.eventoAdverso==='Si'?' selected':''}>Si</option></select>
       </div>
       <div class="form-group" id="c-ev-tipo-wrap" style="display:${rec.eventoAdverso==='Si'?'flex':'none'};flex-direction:column;gap:3px">
         <label>Tipo de evento adverso</label>
         <select id="c-ev-tipo">
-          <option value="">— Selecciona —</option>
+          <option value="">- Selecciona -</option>
           ${['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'].map(t=>`<option value="${t}"${rec.eventoAdversoTipo===t?' selected':''}>${t}</option>`).join('')}
         </select>
       </div>
@@ -589,7 +589,7 @@ function abrirModalObs(id, camaPreset){
   const rec=id?DB.obs.find(r=>r.id===id)||{}:{};
   const camaOpts=Array.from({length:CAMAS_OBS},(_,i)=>`<option value="${i+1}"${(rec.cama==i+1||(camaPreset&&camaPreset===i+1))?' selected':''}>Cama ${i+1}</option>`).join('');
   document.getElementById('modalObsContent').innerHTML=`
-    <div class="modal-title">${id?'Editar — Observación':'Ingresar a Observación'}
+    <div class="modal-title">${id?'Editar - Observación':'Ingresar a Observación'}
       <button class="modal-close" onclick="closeModal('modalObs')">×</button>
     </div>
     <div class="form-grid-3">
@@ -600,12 +600,12 @@ function abrirModalObs(id, camaPreset){
       <div class="form-group"><label>N° Expediente</label><input id="o-exp" value="${rec.expediente||''}"></div>
       <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="o-fnac" value="${rec.fechaNac||''}" onchange="document.getElementById('o-edad').value=calcEdadLocal(this.value)"></div>
       <div class="form-group"><label>Edad</label><input type="number" id="o-edad" value="${rec.edad||''}" min="0"></div>
-      <div class="form-group"><label>Sexo</label><select id="o-sexo"><option value="">—</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select></div>
+      <div class="form-group"><label>Sexo</label><select id="o-sexo"><option value="">-</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select></div>
       <div class="form-group full"><label>Diagnóstico</label><input id="o-diag" value="${rec.diagnostico||''}"></div>
       <div class="form-group"><label>Médico tratante</label><input id="o-med" value="${rec.medico||''}"></div>
       <div class="form-group"><label>Aseguradora</label><input id="o-aseg" value="${rec.aseguradora||''}"></div>
       <div class="form-group"><label>Triage</label>
-        <select id="o-triage"><option value="">—</option><option${rec.triage==='Rojo'?' selected':''}>Rojo</option><option${rec.triage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.triage==='Verde'?' selected':''}>Verde</option></select>
+        <select id="o-triage"><option value="">-</option><option${rec.triage==='Rojo'?' selected':''}>Rojo</option><option${rec.triage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.triage==='Verde'?' selected':''}>Verde</option></select>
       </div>
       <div class="form-group"><label>Destino</label>
         <select id="o-dest">${DESTINOS.map(d=>`<option value="${d}"${rec.destino===d?' selected':''}>${d}</option>`).join('')}</select>
