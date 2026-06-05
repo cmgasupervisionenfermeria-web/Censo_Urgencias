@@ -141,7 +141,6 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
   <div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
-    <button class="nav-tab" onclick="showPage('observacion',this)">🛏 Observación</button>
     <button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
@@ -188,7 +187,7 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
       <table>
         <thead><tr>
           <th>#</th><th>Fecha</th><th>H. Registro</th><th>H. Triage</th><th>H. Atención</th><th>H. Egreso</th>
-          <th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Edad</th><th>Sexo</th>
+          <th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
           <th>Diagnóstico</th><th>Código</th><th>Aseguradora</th><th>1ª vez</th>
           <th>Estancia (h)</th><th>Ev. Adverso</th><th>Médico</th><th>Interconsulta</th>
           <th>Referido por</th><th>Destino</th><th></th>
@@ -393,6 +392,7 @@ function renderCenso(){
       <td>${triageChip(r.triage)}</td>
       <td>${r.cambioTriage?`<span style="font-size:11px;color:var(--naranja)">↑${r.cambioTriage}</span>`:'—'}</td>
       <td style="font-weight:500;max-width:130px">${r.paciente||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'—'}</td>
       <td style="text-align:center">${r.edad||'—'}</td>
       <td style="text-align:center">${r.sexo||'—'}</td>
       <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'—'}</td>
@@ -400,7 +400,7 @@ function renderCenso(){
       <td style="font-size:11px">${r.aseguradora||'—'}</td>
       <td style="text-align:center">${r.primeraVez==='Sí'?'✓':'—'}</td>
       <td style="text-align:center">${estH!=='—'?estH+' h':estH}</td>
-      <td style="text-align:center">${r.eventoAdverso==='Sí'?'<span style="color:var(--rojo);font-weight:700">⚠</span>':'—'}</td>
+      <td style="text-align:center">${r.eventoAdverso==='Si'?`<span style="color:var(--rojo);font-weight:700" title="${r.eventoAdversoTipo||''}">⚠ ${r.eventoAdversoTipo||'Sí'}</span>`:'—'}</td>
       <td style="font-size:11px">${r.medico||'—'}</td>
       <td style="font-size:11px">${r.interconsulta||'—'}</td>
       <td style="font-size:11px">${r.referidoPor||'—'}</td>
@@ -500,6 +500,7 @@ function abrirModal(id){
     <div class="section-lbl">Paciente</div>
     <div class="form-grid-3">
       <div class="form-group full"><label>Nombre del paciente</label><input id="c-pac" value="${rec.paciente||''}" placeholder="Apellidos, Nombre"></div>
+      <div class="form-group"><label>N° Expediente</label><input id="c-exp" value="${rec.expediente||''}" placeholder="EXP-001"></div>
       <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="${rec.fechaNac||''}" onchange="document.getElementById('c-edad').value=calcEdadLocal(this.value)"></div>
       <div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="${rec.edad||''}" min="0" placeholder="Calculada automáticamente"></div>
       <div class="form-group"><label>Sexo</label>
@@ -517,7 +518,14 @@ function abrirModal(id){
         <select id="c-dest">${DESTINOS.map(d=>`<option${rec.destino===d?' selected':''}>${d}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label>Evento adverso</label>
-        <select id="c-ev"><option value="">—</option><option${rec.eventoAdverso==='No'?' selected':''}>No</option><option${rec.eventoAdverso==='Sí'?' selected':''}>Sí</option></select>
+        <select id="c-ev" onchange="toggleEvAdverso()"><option value="">—</option><option${rec.eventoAdverso==='No'?' selected':''}>No</option><option${rec.eventoAdverso==='Si'?' selected':''}>Si</option></select>
+      </div>
+      <div class="form-group" id="c-ev-tipo-wrap" style="display:${rec.eventoAdverso==='Si'?'flex':'none'};flex-direction:column;gap:3px">
+        <label>Tipo de evento adverso</label>
+        <select id="c-ev-tipo">
+          <option value="">— Selecciona —</option>
+          ${['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'].map(t=>`<option value="${t}"${rec.eventoAdversoTipo===t?' selected':''}>${t}</option>`).join('')}
+        </select>
       </div>
     </div>
     <div class="form-actions">
@@ -532,6 +540,11 @@ function selTriage(val,btn){
   document.getElementById('c-triage').value=val;
   document.querySelectorAll('.triage-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
+}
+
+function toggleEvAdverso(){
+  const val=document.getElementById('c-ev').value;
+  document.getElementById('c-ev-tipo-wrap').style.display=val==='Si'?'flex':'none';
 }
 
 async function guardarCenso(id){
@@ -550,6 +563,7 @@ async function guardarCenso(id){
     codigo:document.getElementById('c-codigo').value,
     horaActivacionCodigo:document.getElementById('c-hcod').value,
     paciente:document.getElementById('c-pac').value.trim(),
+    expediente:document.getElementById('c-exp').value.trim().toUpperCase(),
     fechaNac:document.getElementById('c-fnac').value,
     edad:document.getElementById('c-edad').value,
     sexo:document.getElementById('c-sexo').value,
@@ -560,6 +574,7 @@ async function guardarCenso(id){
     referidoPor:document.getElementById('c-ref').value.trim(),
     destino:document.getElementById('c-dest').value,
     eventoAdverso:document.getElementById('c-ev').value,
+    eventoAdversoTipo:document.getElementById('c-ev-tipo')?.value||'',
   };
   if(id){ const i=DB.censo.findIndex(r=>r.id===id); if(i>-1) DB.censo[i]=d; }
   else DB.censo.push(d);
@@ -697,7 +712,7 @@ function renderConcentrado(){
   const pctMort=censo.length?Math.round(defunciones/censo.length*1000)/10:0;
 
   // -- EVENTOS ADVERSOS -------------------------------------------------------
-  const eventosAdv=censo.filter(r=>r.eventoAdverso==='Sí').length;
+  const eventosAdv=censo.filter(r=>r.eventoAdverso==='Si').length;
 
   // -- C?DIGOS ----------------------------------------------------------------
   const codOro=censo.filter(r=>r.codigo==='Oro / Mater').length;
@@ -715,12 +730,17 @@ function renderConcentrado(){
   const pctHosp=censo.length?Math.round(destHosp/censo.length*1000)/10:0;
   const pctQx=censo.length?Math.round(destQx/censo.length*1000)/10:0;
 
-  // -- REINGRESOS (mismo paciente en 72h) -------------------------------------
-  const reingresos=censo.filter(r=>{
-    if(!r.fecha||!r.paciente) return false;
-    const d0=new Date(r.fecha+'T12:00');
-    return censo.some(o=>o.id!==r.id&&o.paciente===r.paciente&&Math.abs(new Date(o.fecha+'T12:00')-d0)<=72*3600000);
-  }).length/2; // dividir entre 2 para no contar doble
+  // -- REINGRESOS (mismo expediente dentro de 72h de la primera atencion) ----
+  const conExp = censo.filter(r=>r.expediente&&r.fecha);
+  const reingresos = conExp.filter(r=>{
+    const d0 = new Date(r.fecha+'T12:00');
+    return conExp.some(o=>
+      o.id !== r.id &&
+      o.expediente === r.expediente &&
+      new Date(o.fecha+'T12:00') > d0 &&
+      new Date(o.fecha+'T12:00') - d0 <= 72*3600000
+    );
+  }).length;
 
   // -- OBSERVACI?N ------------------------------------------------------------
   const egresosObs=obs.filter(r=>r.fechaEgreso).length;
@@ -822,7 +842,7 @@ function renderConcentrado(){
       </div>
       ${ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) × 100',pctHosp+'%',`${destHosp} de ${censo.length} pacientes ingresaron a hospitalización`,pctHosp)}
       ${ic('var(--rojo)','% Ingreso a Quirófano','(quirófano / total) × 100',pctQx+'%',`${destQx} de ${censo.length} pacientes fueron a quirófano`,pctQx)}
-      ${ic('var(--naranja2)','Reingresos en 72 hrs','mismo paciente con 2 visitas ≤72h',Math.round(reingresos),`Pacientes que regresaron a urgencias en menos de 72 horas`,Math.min(reingresos/censo.length*100*5||0,100))}
+      ${ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,`${reingresos} paciente${reingresos!==1?'s':''} regresaron a urgencias en menos de 72 horas`,Math.min(reingresos/(censo.length||1)*100*5,100))}
     </div>
 
     <!-- OBSERVACIÓN -->
