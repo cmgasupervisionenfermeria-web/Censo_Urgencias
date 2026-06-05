@@ -7,7 +7,898 @@
 <title>Urgencias — CMGA</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+*{box-sizing:border-box;margin:0;padding:0}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7C0A02">
+<title>Urgencias — CMGA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
 *{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rojo:#7C0A02;--rojo2:#C0392B;--rojo3:#FDECEA;
+  --amarillo:#856404;--amarillo2:#F59E0B;--amarillo3:#FEF9C3;
+  --verde:#14532D;--verde2:#22C55E;--verde3:#DCFCE7;
+  --az:#1B3F6E;--az2:#2563A8;--az3:#EBF2FB;
+  --morado:#6B21A8;--morado3:#F3E8FF;
+  --naranja:#9A3412;--naranja2:#F97316;--naranja3:#FFEDD5;
+  --gris0:#F8FAFC;--gris1:#F1F5F9;--gris2:#E2E8F0;--gris3:#CBD5E1;
+  --gris4:#94A3B8;--gris5:#64748B;--gris6:#334155;--gris7:#1E293B;
+  --txt:#0F172A;--r:10px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--gris0);color:var(--txt);font-size:14px;min-height:100vh}
+nav{background:var(--rojo);padding:0 20px;display:flex;align-items:center;height:54px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);gap:12px}
+.logo{color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;gap:7px;white-space:nowrap;flex-shrink:0}
+.logo-icon{width:28px;height:28px;background:rgba(255,255,255,.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.nav-tabs{display:flex;gap:2px;flex:1;overflow-x:auto}
+.nav-tab{color:rgba(255,255,255,.65);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;border:none;background:none;white-space:nowrap;font-family:inherit;transition:all .15s}
+.nav-tab:hover{background:rgba(255,255,255,.12);color:#fff}
+.nav-tab.active{background:rgba(255,255,255,.2);color:#fff}
+.page{display:none;padding:20px;max-width:1300px;margin:0 auto}
+.page.active{display:block}
+.top-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.date-nav{display:flex;align-items:center;gap:6px}
+.date-nav button{background:#fff;border:1px solid var(--gris3);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:15px;font-family:inherit}
+.date-nav button:hover{background:var(--gris1)}
+.date-lbl{font-size:14px;font-weight:600;min-width:200px;text-align:center;color:var(--gris7)}
+.card{background:#fff;border:1px solid var(--gris2);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--gris2);display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--gris0);border-radius:var(--r) var(--r) 0 0}
+.card-title{font-weight:600;font-size:13px;color:var(--gris7);display:flex;align-items:center;gap:7px}
+.btn{padding:7px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--rojo);color:#fff}.btn-primary:hover{background:var(--rojo2)}
+.btn-success{background:var(--verde);color:#fff}
+.btn-ghost{background:transparent;color:var(--gris5);border:1px solid var(--gris3)}.btn-ghost:hover{background:var(--gris1)}
+.btn-danger{background:var(--rojo3);color:var(--rojo);border:1px solid #FECACA}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:6px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;font-weight:600;color:var(--gris5);text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{padding:7px 10px;border:1px solid var(--gris3);border-radius:7px;font-family:inherit;font-size:13px;color:var(--txt);background:#fff;outline:none;width:100%;transition:border .15s}
+input:focus,select:focus{border-color:var(--rojo2);box-shadow:0 0 0 3px rgba(192,57,43,.1)}
+.section-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gris4);padding:12px 0 8px;border-bottom:1px solid var(--gris2);margin-bottom:10px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--gris2);flex-wrap:wrap}
+/* TRIAGE CHIPS */
+.triage-rojo{background:#FDECEA;color:#7C0A02;border:1.5px solid #F5A49A;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.triage-amarillo{background:var(--amarillo3);color:var(--amarillo);border:1.5px solid #FDE68A;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.triage-verde{background:var(--verde3);color:var(--verde);border:1.5px solid #86EFAC;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700}
+/* TABLA */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--gris1);padding:7px 10px;text-align:left;font-weight:600;font-size:10px;color:var(--gris5);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--gris2);white-space:nowrap;position:sticky;top:0}
+tbody tr{border-bottom:1px solid var(--gris1);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--gris0)}
+tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
+.add-row-btn{width:100%;padding:10px;background:var(--gris0);border:none;border-top:1px solid var(--gris2);cursor:pointer;font-family:inherit;font-size:12px;color:var(--gris4);border-radius:0 0 8px 8px}
+.add-row-btn:hover{background:var(--gris1)}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border:1px solid var(--gris2);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
+.stat-lbl{font-size:10px;font-weight:600;color:var(--gris4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:600;line-height:1}
+.stat-sub{font-size:10px;color:var(--gris4);margin-top:3px}
+/* IND */
+.ind-card{background:#fff;border:1px solid var(--gris2);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+.ind-hdr{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.ind-dot{width:8px;height:8px;border-radius:50%}
+.ind-ttl{font-size:10px;font-weight:700;color:var(--gris5);text-transform:uppercase;letter-spacing:.05em}
+.ind-formula{font-size:9px;color:var(--gris4);font-family:'DM Mono',monospace;margin-bottom:6px}
+.ind-val{font-size:28px;font-weight:600;line-height:1;margin-bottom:3px}
+.ind-desc{font-size:11px;color:var(--gris4);line-height:1.5}
+.ind-bar{height:4px;background:var(--gris2);border-radius:99px;margin-top:8px;overflow:hidden}
+.ind-fill{height:100%;border-radius:99px}
+.ind-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.ind-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.group-title{font-size:11px;font-weight:700;color:var(--gris6);text-transform:uppercase;letter-spacing:.06em;padding:10px 0 6px;border-bottom:2px solid var(--gris2);margin-bottom:10px;grid-column:1/-1}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:200}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:780px;max-height:92vh;overflow-y:auto}
+@media(min-width:780px){.modal-bg{align-items:center;padding:1rem}.modal{border-radius:14px}}
+.modal-handle{width:36px;height:4px;background:var(--gris3);border-radius:2px;margin:0 auto 14px}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--gris4);font-size:22px;line-height:1}
+/* PIN */
+.pin-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:500}
+.pin-modal.open{display:flex}
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--gris7);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:all .25s cubic-bezier(.34,1.56,.64,1);z-index:999;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--verde)}
+.toast.error{background:var(--rojo)}
+.empty{text-align:center;padding:32px 20px;color:var(--gris4)}
+.empty-icon{font-size:28px;margin-bottom:6px;opacity:.4}
+/* OBSERVACIÓN CAMAS */
+.camas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:16px}
+.cama-card{border:2px solid var(--gris2);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;background:#fff}
+.cama-card:hover{border-color:var(--gris4)}
+.cama-card.ocupada-rojo{border-color:var(--rojo2);background:var(--rojo3)}
+.cama-card.ocupada-amarillo{border-color:var(--amarillo2);background:var(--amarillo3)}
+.cama-card.ocupada-verde{border-color:var(--verde2);background:var(--verde3)}
+.cama-num{font-size:11px;font-weight:700;color:var(--gris4);text-transform:uppercase;margin-bottom:4px}
+.cama-pac{font-size:12px;font-weight:600;color:var(--gris7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cama-diag{font-size:11px;color:var(--gris5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.cama-libre{color:var(--gris3);font-size:12px;font-style:italic}
+/* SEMAFORO SELECTOR */
+.triage-btns{display:flex;gap:8px;margin-top:4px}
+.triage-btn{flex:1;padding:8px;border-radius:8px;border:2px solid;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;text-align:center;transition:all .15s}
+.triage-btn.rojo{border-color:var(--rojo2);color:var(--rojo);background:var(--rojo3)}
+.triage-btn.amarillo{border-color:var(--amarillo2);color:var(--amarillo);background:var(--amarillo3)}
+.triage-btn.verde{border-color:var(--verde2);color:var(--verde);background:var(--verde3)}
+.triage-btn.selected{opacity:1;transform:scale(1.03);box-shadow:0 0 0 3px currentColor}
+.triage-btn:not(.selected){opacity:.55}
+/* TIEMPO CHIPS */
+.tiempo-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.tc-ok{background:var(--verde3);color:var(--verde)}
+.tc-warn{background:var(--amarillo3);color:var(--amarillo)}
+.tc-crit{background:var(--rojo3);color:var(--rojo)}
+@media(max-width:700px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid-3,.form-grid-4{grid-template-columns:1fr 1fr}
+  .ind-grid-2,.ind-grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
+    <button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
+    <span id="modeLabel" style="background:rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:500">Solo lectura</span>
+    <button id="lockBtn" onclick="toggleLock()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit">🔒 PIN</button>
+  </div>
+</nav>
+
+<!-- PIN -->
+<div class="pin-modal" id="pinModal">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center">
+    <div style="font-size:36px;margin-bottom:10px">🔐</div>
+    <div style="font-size:17px;font-weight:600;margin-bottom:6px">Acceso de edición</div>
+    <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">Ingresa el PIN para modificar el censo</div>
+    <input id="pinInput" type="password" maxlength="6" placeholder="••••••" onkeydown="if(event.key==='Enter')verifyPin()"
+      style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid #CBD5E1;border-radius:10px;font-family:'DM Mono',monospace;letter-spacing:.3em;margin-bottom:14px;outline:none">
+    <div id="pinError" style="color:#991B1B;font-size:12px;margin-bottom:10px;min-height:16px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closePinModal()" style="flex:1;padding:9px;border-radius:8px;border:1px solid #CBD5E1;background:transparent;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button onclick="verifyPin()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--rojo);color:#fff;cursor:pointer;font-family:inherit;font-weight:500">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CENSO ═══ -->
+<div class="page active" id="page-censo">
+  <div class="top-bar">
+    <div class="date-nav">
+      <button onclick="cambiarDia(-1)">‹</button>
+      <span class="date-lbl" id="dateLabel"></span>
+      <button onclick="cambiarDia(1)">›</button>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">↓ CSV</button>
+  </div>
+  <!-- STATS DÍA -->
+  <div id="statsDay" class="stats-grid" style="grid-template-columns:repeat(6,1fr)"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🚨 Pacientes del día</span>
+      <span id="censo-count" style="font-size:12px;color:var(--gris4)"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Fecha</th><th>H. Registro</th><th>H. Triage</th><th>H. Atención</th><th>H. Egreso</th>
+          <th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
+          <th>Diagnóstico</th><th>Código</th><th>Aseguradora</th><th>1ª vez</th>
+          <th>Estancia (h)</th><th>Ev. Adverso</th><th>Médico</th><th>Interconsulta</th>
+          <th>Referido por</th><th>Destino</th><th></th>
+        </tr></thead>
+        <tbody id="censo-tbody"></tbody>
+      </table>
+      <div class="empty" id="censo-empty"><div class="empty-icon">🚨</div><p>Sin pacientes registrados hoy</p></div>
+      <button class="add-row-btn" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OBSERVACIÓN ═══ -->
+<div class="page" id="page-observacion">
+  <div class="top-bar">
+    <div class="date-nav">
+      <button onclick="cambiarDia(-1)">‹</button>
+      <span class="date-lbl" id="dateLabelObs"></span>
+      <button onclick="cambiarDia(1)">›</button>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModalObs(null))">+ Agregar a Observación</button>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🛏 Camas de Observación</span>
+      <span id="obs-count" style="font-size:12px;color:var(--gris4)"></span>
+    </div>
+    <div class="camas-grid" id="camasGrid"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Lista de pacientes en Observación</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Cama</th><th>Ingreso</th><th>Días</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
+          <th>Diagnóstico</th><th>Médico</th><th>Triage</th><th>Destino</th><th>F. Egreso</th><th></th>
+        </tr></thead>
+        <tbody id="obs-tbody"></tbody>
+      </table>
+      <div class="empty" id="obs-empty"><div class="empty-icon">🛏</div><p>Sin pacientes en observación</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONCENTRADO ═══ -->
+<div class="page" id="page-concentrado">
+  <div class="top-bar" style="justify-content:space-between">
+    <div style="font-size:16px;font-weight:600;color:var(--gris7)">Concentrado Mensual</div>
+    <div style="display:flex;gap:8px">
+      <select id="con-mes" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+        <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+        <option value="3">Abril</option><option value="4">Mayo</option><option value="5" selected>Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+        <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <select id="con-anio" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+        <option>2026</option><option>2027</option>
+      </select>
+    </div>
+  </div>
+  <div id="concentrado-body"></div>
+</div>
+
+<!-- MODAL CENSO -->
+<div class="modal-bg" id="modalCenso" onclick="if(event.target===this)closeModal('modalCenso')">
+  <div class="modal"><div class="modal-handle"></div><div id="modalCensoContent"></div></div>
+</div>
+
+<!-- MODAL OBSERVACIÓN -->
+<div class="modal-bg" id="modalObs" onclick="if(event.target===this)closeModal('modalObs')">
+  <div class="modal"><div class="modal-handle"></div><div id="modalObsContent"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// -- CONFIG ---------------------------------------------------------------------
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU3vZigwQAl6JcipRuJXi4cIHFOkv6nL-7uUWCRQaGUzwD37tZ2dBvd9j0MUYaRjGG/exec';
+const PIN = 'URG1';
+const CAMAS_OBS = 10;
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DESTINOS = ['Hospitalización','Quirófano','Domicilio','Alta voluntaria','Defunción','Referencia','Observación','Pendiente'];
+const CODIGOS = ['Ninguno','Oro / Mater','Infarto','Sepsis','Cerebro'];
+
+// -- ESTADO --------------------------------------------------------------------
+let cur = new Date(); cur.setHours(0,0,0,0);
+let pinOK = false, pinCB = null;
+let nid = 1;
+let DB = { censo:[], obs:[] };
+const GAS_CONFIGURADO = GAS_URL !== 'TU_URL_URGENCIAS_AQUI';
+
+// -- UTILS ---------------------------------------------------------------------
+function dk(d){ if(typeof d==='string') d=new Date(d+'T12:00:00'); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmt(d){ const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']; const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return days[d.getDay()]+', '+d.getDate()+' de '+m[d.getMonth()]+' de '+d.getFullYear(); }
+function toast(msg,tipo='success'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+tipo; setTimeout(()=>t.className='toast',3000); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function showLoader(m){ let el=document.getElementById('lb'); if(!el){el=document.createElement('div');el.id='lb';el.style.cssText='position:fixed;top:54px;left:0;right:0;background:var(--rojo);color:#fff;text-align:center;padding:6px;font-size:12px;z-index:300';document.body.appendChild(el);} el.textContent=m; el.style.display='block'; }
+function hideLoader(){ const el=document.getElementById('lb'); if(el) el.style.display='none'; }
+
+// Calcular minutos entre dos horas "HH:MM"
+function minEntre(h1, h2){
+  if(!h1||!h2) return null;
+  const [a,b]=h1.split(':').map(Number), [c,d]=h2.split(':').map(Number);
+  const diff=(c*60+d)-(a*60+b);
+  return diff>=0?diff:diff+1440;
+}
+function fmtMin(m){ if(m===null||m===undefined) return '—'; const h=Math.floor(m/60), min=m%60; return h>0?`${h}h ${min}m`:`${min}m`; }
+function triageChip(t){ if(!t) return '—'; const m={Rojo:'triage-rojo',Amarillo:'triage-amarillo',Verde:'triage-verde'}; return `<span class="${m[t]||''}">${t}</span>`; }
+
+// Calcular edad desde fecha de nacimiento
+function calcEdadLocal(fnac){ if(!fnac) return ''; const n=new Date(fnac+'T12:00'), h=new Date(); let e=h.getFullYear()-n.getFullYear(); if(h.getMonth()-n.getMonth()<0||(h.getMonth()-n.getMonth()===0&&h.getDate()<n.getDate())) e--; return e>=0?e:''; }
+
+// -- PIN ------------------------------------------------------------------------
+function requirePin(cb){ if(pinOK){cb();return;} pinCB=cb; document.getElementById('pinInput').value=''; document.getElementById('pinError').textContent=''; document.getElementById('pinModal').classList.add('open'); setTimeout(()=>document.getElementById('pinInput').focus(),100); }
+function verifyPin(){ if(document.getElementById('pinInput').value===PIN){ pinOK=true; document.getElementById('pinModal').classList.remove('open'); document.getElementById('modeLabel').textContent='✏ Editor'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.25)'; document.getElementById('lockBtn').textContent='🔓 Salir'; toast('Modo edición activado'); if(pinCB){pinCB();pinCB=null;} } else { document.getElementById('pinError').textContent='PIN incorrecto'; document.getElementById('pinInput').value=''; } }
+function closePinModal(){ document.getElementById('pinModal').classList.remove('open'); pinCB=null; }
+function toggleLock(){ if(pinOK){ pinOK=false; document.getElementById('modeLabel').textContent='Solo lectura'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.2)'; document.getElementById('lockBtn').textContent='🔒 PIN'; toast('Modo solo lectura'); } else requirePin(()=>{}); }
+
+// -- NAVEGACI?N ----------------------------------------------------------------
+function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); actualizarFechas(); if(id==='censo') renderCenso(); if(id==='observacion') renderObs(); if(id==='concentrado') renderConcentrado(); }
+function cambiarDia(d){ cur.setDate(cur.getDate()+d); actualizarFechas(); renderCenso(); renderObs(); }
+function actualizarFechas(){ const l=fmt(cur); ['dateLabel','dateLabelObs'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;}); }
+
+// -- PERSISTENCIA --------------------------------------------------------------
+function guardarLocal(){ try{ localStorage.setItem('urg_db_v1',JSON.stringify({db:DB,nid,ts:Date.now()})); }catch(e){} }
+function cargarLocal(){ try{ const r=localStorage.getItem('urg_db_v1'); if(!r) return false; const p=JSON.parse(r); if(p.db){['censo','obs'].forEach(s=>{if(Array.isArray(p.db[s]))DB[s]=p.db[s];}); } if(p.nid) nid=p.nid; return true; }catch(e){return false;} }
+function recalcNid(){ const ids=[...DB.censo,...DB.obs].map(x=>Number(x.id)||0); nid=ids.length?Math.max(...ids)+1:1; }
+
+async function apiCall(payload){
+  guardarLocal();
+  if(!GAS_CONFIGURADO) return {ok:true};
+  try{
+    const params=new URLSearchParams();
+    params.append('action',payload.action);
+    params.append('section',payload.section||'');
+    if(payload.record) params.append('record',JSON.stringify(payload.record));
+    if(payload.id!==undefined) params.append('id',payload.id);
+    const r=await fetch(GAS_URL+'?'+params.toString());
+    const data=await r.json();
+    if(data.ok) guardarLocal();
+    return data;
+  }catch(e){ toast('⚠ Sin conexión — guardado localmente','error'); return{ok:false}; }
+}
+
+async function cargarDatos(){
+  const hayLocal=cargarLocal();
+  if(hayLocal){ recalcNid(); actualizarFechas(); renderCenso(); renderObs(); }
+  if(!GAS_CONFIGURADO){ if(!hayLocal){actualizarFechas();renderCenso();renderObs();} return; }
+  showLoader('🔄 Sincronizando…');
+  try{
+    const r=await fetch(GAS_URL+'?action=getAll');
+    const data=await r.json();
+    if(data&&typeof data==='object'){
+      ['censo','obs'].forEach(s=>{
+        if(Array.isArray(data[s])){
+          DB[s]=data[s].map(rec=>{
+            ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{ if(rec[c]&&typeof rec[c]==='string'&&rec[c].includes('T')) rec[c]=rec[c].split('T')[0]; });
+            ['horaRegistro','horaTriage','horaAtencion','horaEgreso','horaActivacionCodigo','horaIngreso'].forEach(c=>{
+              if(rec[c]&&typeof rec[c]==='string'&&rec[c].includes('T')){
+                const d=new Date(rec[c]);
+                const hh=d.getUTCHours(), mm=d.getUTCMinutes();
+                rec[c]=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+              }
+            });
+            return rec;
+          });
+        }
+      });
+      recalcNid(); guardarLocal();
+    }
+  }catch(e){ console.error(e); }
+  hideLoader(); actualizarFechas(); renderCenso(); renderObs();
+}
+
+// -- RENDER CENSO --------------------------------------------------------------
+function renderCenso(){
+  const hoy=dk(cur);
+  const data=DB.censo.filter(r=>r.fecha===hoy).sort((a,b)=>Number(a.num)||0-(Number(b.num)||0));
+  const tbody=document.getElementById('censo-tbody');
+  const empty=document.getElementById('censo-empty');
+  document.getElementById('censo-count').textContent=data.length+' paciente'+(data.length!==1?'s':'');
+
+  // Stats del d?a
+  const rojos=data.filter(r=>r.triage==='Rojo').length;
+  const amarillos=data.filter(r=>r.triage==='Amarillo').length;
+  const verdes=data.filter(r=>r.triage==='Verde').length;
+  const defunciones=data.filter(r=>r.destino==='Defunción').length;
+  const hosps=data.filter(r=>r.destino==='Hospitalización').length;
+  const masde6h=data.filter(r=>{ const m=minEntre(r.horaRegistro,r.horaEgreso); return m!==null&&m>360; }).length;
+  document.getElementById('statsDay').innerHTML=
+    `<div class="stat-card"><div class="stat-lbl">Total del día</div><div class="stat-val" style="color:var(--rojo)">${data.length}</div></div>`+
+    `<div class="stat-card"><div class="stat-lbl">🔴 Rojo</div><div class="stat-val" style="color:var(--rojo)">${rojos}</div></div>`+
+    `<div class="stat-card"><div class="stat-lbl">🟡 Amarillo</div><div class="stat-val" style="color:var(--amarillo)">${amarillos}</div></div>`+
+    `<div class="stat-card"><div class="stat-lbl">🟢 Verde</div><div class="stat-val" style="color:var(--verde)">${verdes}</div></div>`+
+    `<div class="stat-card"><div class="stat-lbl">Hospitalizados</div><div class="stat-val" style="color:var(--az)">${hosps}</div></div>`+
+    `<div class="stat-card"><div class="stat-lbl">⚠ +6 horas</div><div class="stat-val" style="color:${masde6h>0?'var(--rojo)':'var(--gris4)'}">${masde6h}</div></div>`;
+
+  if(!data.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=data.map(r=>{
+    const estMin=minEntre(r.horaRegistro,r.horaEgreso);
+    const estH=estMin!==null?Math.round(estMin/60*10)/10:null;
+    // Pacientes activos sin egreso: calcular desde hora registro hasta ahora
+    const estMinActual = !r.horaEgreso && r.horaRegistro
+      ? (() => { const [hh,mm]=r.horaRegistro.split(':').map(Number); const ahora=new Date(); const minReg=hh*60+mm; const minAhora=ahora.getHours()*60+ahora.getMinutes(); return minAhora>=minReg?minAhora-minReg:null; })()
+      : null;
+    const masde6 = (estMin!==null&&estMin>360) || (estMinActual!==null&&estMinActual>360);
+    const rowStyle = masde6 ? 'background:#FFF5F5;border-left:3px solid var(--rojo2);' : '';
+    const estCelda = estH!==null
+      ? `<span style="font-weight:600;color:${estH>6?'var(--rojo)':'var(--gris6)'}">${estH} h${estH>6?' ⚠':''}</span>`
+      : estMinActual!==null
+        ? `<span style="font-weight:600;color:${estMinActual>360?'var(--rojo)':'var(--gris6)'}">~${Math.round(estMinActual/60*10)/10} h${estMinActual>360?' ⚠':''}</span>`
+        : '—';
+    return `<tr onclick="requirePin(()=>abrirModal(${r.id}))" style="${rowStyle}">`+
+      <td style="font-weight:600;color:var(--gris4)">${r.num||'—'}</td>
+      <td style="font-size:11px">${r.fecha||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaRegistro||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaTriage||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaAtencion||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.horaEgreso||'—'}</td>
+      <td>${triageChip(r.triage)}</td>
+      <td>${r.cambioTriage?`<span style="font-size:11px;color:var(--naranja)">↑${r.cambioTriage}</span>`:'—'}</td>
+      <td style="font-weight:500;max-width:130px">${r.paciente||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'—'}</td>
+      <td style="text-align:center">${r.edad||'—'}</td>
+      <td style="text-align:center">${r.sexo||'—'}</td>
+      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'—'}</td>
+      <td style="font-size:11px">${r.codigo&&r.codigo!=='Ninguno'?`<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">${r.codigo}</span>`:'—'}</td>
+      <td style="font-size:11px">${r.aseguradora||'—'}</td>
+      <td style="text-align:center">${r.primeraVez==='Sí'?'✓':'—'}</td>
+      <td style="text-align:center">${estCelda}</td>
+      <td style="text-align:center">${r.eventoAdverso==='Si'?`<span style="color:var(--rojo);font-weight:700" title="${r.eventoAdversoTipo||''}">⚠ ${r.eventoAdversoTipo||'Sí'}</span>`:'—'}</td>
+      <td style="font-size:11px">${r.medico||'—'}</td>
+      <td style="font-size:11px">${r.interconsulta||'—'}</td>
+      <td style="font-size:11px">${r.referidoPor||'—'}</td>
+      <td style="font-size:11px;font-weight:500">${r.destino||'—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>eliminar(${r.id},'censo'))" style="color:var(--rojo)">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// -- RENDER OBSERVACI?N --------------------------------------------------------
+function renderObs(){
+  const hoy=dk(cur);
+  const activos=DB.obs.filter(r=>{
+    if(!r.fechaIngreso) return false;
+    if(r.fechaIngreso>hoy) return false;
+    if(r.fechaEgreso&&r.fechaEgreso<hoy) return false;
+    return true;
+  });
+  document.getElementById('obs-count').textContent=activos.length+' paciente'+(activos.length!==1?'s':'')+' - '+(CAMAS_OBS-activos.length)+' camas libres';
+
+  // Grid de camas
+  const camasGrid=document.getElementById('camasGrid');
+  let html='';
+  for(let i=1;i<=CAMAS_OBS;i++){
+    const pac=activos.find(r=>Number(r.cama)===i);
+    const cls=pac?`ocupada-${(pac.triage||'verde').toLowerCase()}`:'';
+    html+=`<div class="cama-card ${cls}" onclick="requirePin(()=>abrirModalObs(${pac?pac.id:'null'},${i}))">
+      <div class="cama-num">Cama ${i}</div>
+      ${pac
+        ?`<div class="cama-pac">${pac.paciente||'Sin nombre'}</div><div class="cama-diag">${pac.diagnostico||'—'}</div>`
+        :`<div class="cama-libre">Disponible</div>`}
+    </div>`;
+  }
+  camasGrid.innerHTML=html;
+
+  // Tabla
+  const tbody=document.getElementById('obs-tbody');
+  const empty=document.getElementById('obs-empty');
+  if(!activos.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=[...activos].sort((a,b)=>(Number(a.cama)||0)-(Number(b.cama)||0)).map(r=>{
+    const dias=r.fechaIngreso?Math.max(0,Math.round((new Date(hoy+'T12:00')-new Date(r.fechaIngreso+'T12:00'))/(1000*60*60*24))):0;
+    const egresaHoy=r.fechaEgreso===hoy;
+    return `<tr style="${egresaHoy?'background:#F0FDF4':''}" onclick="requirePin(()=>abrirModalObs(${r.id}))">
+      <td><b>Cama ${r.cama||'—'}</b></td>
+      <td style="font-size:11px">${r.fechaIngreso||'—'}</td>
+      <td style="text-align:center;font-weight:600">${dias}</td>
+      <td style="font-weight:500">${r.paciente||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.expediente||'—'}</td>
+      <td style="text-align:center">${r.edad||'—'}</td>
+      <td style="text-align:center">${r.sexo||'—'}</td>
+      <td style="max-width:140px;font-size:11px;color:var(--gris5)">${r.diagnostico||'—'}</td>
+      <td style="font-size:11px">${r.medico||'—'}</td>
+      <td>${triageChip(r.triage)}</td>
+      <td style="font-size:11px">${r.destino||'—'}</td>
+      <td style="font-size:11px">${egresaHoy?`<span style="color:var(--verde);font-weight:600">✓ Hoy ${r.horaEgreso||''}</span>`:r.fechaEgreso||'—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>eliminar(${r.id},'obs'))" style="color:var(--rojo)">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// -- MODAL CENSO ---------------------------------------------------------------
+function abrirModal(id){
+  const rec=id?DB.censo.find(r=>r.id===id)||{}:{};
+  const triajeVal=rec.triage||'';
+  document.getElementById('modalCensoContent').innerHTML=`
+    <div class="modal-title">${id?'Editar registro':'Nuevo paciente — Urgencias'}
+      <button class="modal-close" onclick="closeModal('modalCenso')">×</button>
+    </div>
+    <div class="section-lbl">Datos del registro</div>
+    <div class="form-grid-4">
+      <div class="form-group"><label>Fecha</label><input type="date" id="c-fecha" value="${rec.fecha||dk(cur)}"></div>
+      <div class="form-group"><label>H. Registro</label><input type="time" id="c-hreg" value="${rec.horaRegistro||''}"></div>
+      <div class="form-group"><label>H. Triage</label><input type="time" id="c-htriage" value="${rec.horaTriage||''}"></div>
+      <div class="form-group"><label>H. Atención médica</label><input type="time" id="c-haten" value="${rec.horaAtencion||''}"></div>
+      <div class="form-group"><label>H. Egreso</label><input type="time" id="c-hegr" value="${rec.horaEgreso||''}"></div>
+      <div class="form-group"><label>¿Primera vez?</label>
+        <select id="c-pvez"><option value="">—</option><option${rec.primeraVez==='Sí'?' selected':''}>Sí</option><option${rec.primeraVez==='No'?' selected':''}>No</option></select>
+      </div>
+    </div>
+    <div class="section-lbl">Triage — Semáforo</div>
+    <div class="triage-btns">
+      <button class="triage-btn rojo${triajeVal==='Rojo'?' selected':''}" onclick="selTriage('Rojo',this)">🔴 Rojo<br><span style="font-size:10px;font-weight:400">Crítico</span></button>
+      <button class="triage-btn amarillo${triajeVal==='Amarillo'?' selected':''}" onclick="selTriage('Amarillo',this)">🟡 Amarillo<br><span style="font-size:10px;font-weight:400">Urgente</span></button>
+      <button class="triage-btn verde${triajeVal==='Verde'?' selected':''}" onclick="selTriage('Verde',this)">🟢 Verde<br><span style="font-size:10px;font-weight:400">No urgente</span></button>
+    </div>
+    <input type="hidden" id="c-triage" value="${triajeVal}">
+    <div style="margin-top:10px" class="form-grid">
+      <div class="form-group"><label>Cambio en clasificación de Triage</label>
+        <select id="c-cambiotriage"><option value="">— Sin cambio —</option><option${rec.cambioTriage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.cambioTriage==='Rojo'?' selected':''}>Rojo</option></select>
+      </div>
+      <div class="form-group"><label>Código activado</label>
+        <select id="c-codigo">${CODIGOS.map(c=>`<option${rec.codigo===c?' selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Hora de activación de código</label><input type="time" id="c-hcod" value="${rec.horaActivacionCodigo||''}"></div>
+    </div>
+    <div class="section-lbl">Paciente</div>
+    <div class="form-grid-3">
+      <div class="form-group full"><label>Nombre del paciente</label><input id="c-pac" value="${rec.paciente||''}" placeholder="Apellidos, Nombre"></div>
+      <div class="form-group"><label>N° Expediente</label><input id="c-exp" value="${rec.expediente||''}" placeholder="EXP-001"></div>
+      <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="${rec.fechaNac||''}" onchange="document.getElementById('c-edad').value=calcEdadLocal(this.value)"></div>
+      <div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="${rec.edad||''}" min="0" placeholder="Calculada automáticamente"></div>
+      <div class="form-group"><label>Sexo</label>
+        <select id="c-sexo"><option value="">—</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select>
+      </div>
+      <div class="form-group full"><label>Diagnóstico</label><input id="c-diag" value="${rec.diagnostico||''}"></div>
+      <div class="form-group"><label>Aseguradora</label><input id="c-aseg" value="${rec.aseguradora||''}"></div>
+    </div>
+    <div class="section-lbl">Equipo médico y destino</div>
+    <div class="form-grid-3">
+      <div class="form-group"><label>Médico de guardia</label><input id="c-med" value="${rec.medico||''}"></div>
+      <div class="form-group"><label>Médico interconsulta</label><input id="c-inter" value="${rec.interconsulta||''}"></div>
+      <div class="form-group"><label>Referido por médico</label><input id="c-ref" value="${rec.referidoPor||''}"></div>
+      <div class="form-group"><label>Destino del paciente</label>
+        <select id="c-dest">${DESTINOS.map(d=>`<option${rec.destino===d?' selected':''}>${d}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Evento adverso</label>
+        <select id="c-ev" onchange="toggleEvAdverso()"><option value="">—</option><option${rec.eventoAdverso==='No'?' selected':''}>No</option><option${rec.eventoAdverso==='Si'?' selected':''}>Si</option></select>
+      </div>
+      <div class="form-group" id="c-ev-tipo-wrap" style="display:${rec.eventoAdverso==='Si'?'flex':'none'};flex-direction:column;gap:3px">
+        <label>Tipo de evento adverso</label>
+        <select id="c-ev-tipo">
+          <option value="">— Selecciona —</option>
+          ${['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'].map(t=>`<option value="${t}"${rec.eventoAdversoTipo===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      ${id?`<button class="btn btn-danger btn-sm" onclick="eliminar(${id},'censo')">🗑 Eliminar</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal('modalCenso')">Cancelar</button>
+      <button class="btn btn-success" onclick="guardarCenso(${id||0})">✓ Guardar</button>
+    </div>`;
+  document.getElementById('modalCenso').classList.add('open');
+}
+
+function selTriage(val,btn){
+  document.getElementById('c-triage').value=val;
+  document.querySelectorAll('.triage-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function toggleEvAdverso(){
+  const val=document.getElementById('c-ev').value;
+  document.getElementById('c-ev-tipo-wrap').style.display=val==='Si'?'flex':'none';
+}
+
+async function guardarCenso(id){
+  const numActual = DB.censo.filter(r=>r.fecha===document.getElementById('c-fecha').value).length + (id?0:1);
+  const d={
+    id:id||nid++,
+    num:id?DB.censo.find(r=>r.id===id)?.num||numActual:numActual,
+    fecha:document.getElementById('c-fecha').value,
+    horaRegistro:document.getElementById('c-hreg').value,
+    horaTriage:document.getElementById('c-htriage').value,
+    horaAtencion:document.getElementById('c-haten').value,
+    horaEgreso:document.getElementById('c-hegr').value,
+    horasEstancia:(()=>{
+      const reg=document.getElementById('c-hreg').value;
+      const egr=document.getElementById('c-hegr').value;
+      if(!reg||!egr) return '';
+      const m=minEntre(reg,egr);
+      return m!==null&&m>0 ? Math.round(m/60*100)/100 : '';
+    })(),
+    primeraVez:document.getElementById('c-pvez').value,
+    triage:document.getElementById('c-triage').value,
+    cambioTriage:document.getElementById('c-cambiotriage').value,
+    codigo:document.getElementById('c-codigo').value,
+    horaActivacionCodigo:document.getElementById('c-hcod').value,
+    paciente:document.getElementById('c-pac').value.trim(),
+    expediente:document.getElementById('c-exp').value.trim().toUpperCase(),
+    fechaNac:document.getElementById('c-fnac').value,
+    edad:document.getElementById('c-edad').value,
+    sexo:document.getElementById('c-sexo').value,
+    diagnostico:document.getElementById('c-diag').value.trim(),
+    aseguradora:document.getElementById('c-aseg').value.trim(),
+    medico:document.getElementById('c-med').value.trim(),
+    interconsulta:document.getElementById('c-inter').value.trim(),
+    referidoPor:document.getElementById('c-ref').value.trim(),
+    destino:document.getElementById('c-dest').value,
+    eventoAdverso:document.getElementById('c-ev').value,
+    eventoAdversoTipo:document.getElementById('c-ev-tipo')?.value||'',
+  };
+  if(id){ const i=DB.censo.findIndex(r=>r.id===id); if(i>-1) DB.censo[i]=d; }
+  else DB.censo.push(d);
+  showLoader('💾 Guardando…');
+  await apiCall({action:id?'update':'save', section:'censo', record:d});
+  hideLoader(); closeModal('modalCenso'); renderCenso();
+  toast('✓ Registro guardado');
+}
+
+// -- MODAL OBSERVACI?N ---------------------------------------------------------
+function abrirModalObs(id, camaPreset){
+  const rec=id?DB.obs.find(r=>r.id===id)||{}:{};
+  const camaOpts=Array.from({length:CAMAS_OBS},(_,i)=>`<option value="${i+1}"${(rec.cama==i+1||(camaPreset&&camaPreset===i+1))?' selected':''}>Cama ${i+1}</option>`).join('');
+  document.getElementById('modalObsContent').innerHTML=`
+    <div class="modal-title">${id?'Editar — Observación':'Ingresar a Observación'}
+      <button class="modal-close" onclick="closeModal('modalObs')">×</button>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group"><label>Cama</label><select id="o-cama">${camaOpts}</select></div>
+      <div class="form-group"><label>Fecha ingreso</label><input type="date" id="o-fing" value="${rec.fechaIngreso||dk(cur)}"></div>
+      <div class="form-group"><label>Hora ingreso</label><input type="time" id="o-hing" value="${rec.horaIngreso||''}"></div>
+      <div class="form-group full"><label>Nombre del paciente</label><input id="o-pac" value="${rec.paciente||''}" placeholder="Apellidos, Nombre"></div>
+      <div class="form-group"><label>N° Expediente</label><input id="o-exp" value="${rec.expediente||''}"></div>
+      <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="o-fnac" value="${rec.fechaNac||''}" onchange="document.getElementById('o-edad').value=calcEdadLocal(this.value)"></div>
+      <div class="form-group"><label>Edad</label><input type="number" id="o-edad" value="${rec.edad||''}" min="0"></div>
+      <div class="form-group"><label>Sexo</label><select id="o-sexo"><option value="">—</option><option value="M"${rec.sexo==='M'?' selected':''}>Masculino</option><option value="F"${rec.sexo==='F'?' selected':''}>Femenino</option></select></div>
+      <div class="form-group full"><label>Diagnóstico</label><input id="o-diag" value="${rec.diagnostico||''}"></div>
+      <div class="form-group"><label>Médico tratante</label><input id="o-med" value="${rec.medico||''}"></div>
+      <div class="form-group"><label>Aseguradora</label><input id="o-aseg" value="${rec.aseguradora||''}"></div>
+      <div class="form-group"><label>Triage</label>
+        <select id="o-triage"><option value="">—</option><option${rec.triage==='Rojo'?' selected':''}>Rojo</option><option${rec.triage==='Amarillo'?' selected':''}>Amarillo</option><option${rec.triage==='Verde'?' selected':''}>Verde</option></select>
+      </div>
+      <div class="form-group"><label>Destino</label>
+        <select id="o-dest">${DESTINOS.map(d=>`<option value="${d}"${rec.destino===d?' selected':''}>${d}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Fecha egreso</label><input type="date" id="o-feg" value="${rec.fechaEgreso||''}"></div>
+      <div class="form-group"><label>Hora egreso</label><input type="time" id="o-heg" value="${rec.horaEgreso||''}"></div>
+    </div>
+    <div class="form-actions">
+      ${id?`<button class="btn btn-danger btn-sm" onclick="eliminar(${id},'obs')">🗑 Eliminar</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal('modalObs')">Cancelar</button>
+      <button class="btn btn-success" onclick="guardarObs(${id||0})">✓ Guardar</button>
+    </div>`;
+  document.getElementById('modalObs').classList.add('open');
+}
+
+async function guardarObs(id){
+  const d={
+    id:id||nid++,
+    cama:document.getElementById('o-cama').value,
+    fechaIngreso:document.getElementById('o-fing').value,
+    horaIngreso:document.getElementById('o-hing').value,
+    paciente:document.getElementById('o-pac').value.trim(),
+    expediente:document.getElementById('o-exp').value.trim().toUpperCase(),
+    fechaNac:document.getElementById('o-fnac').value,
+    edad:document.getElementById('o-edad').value,
+    sexo:document.getElementById('o-sexo').value,
+    diagnostico:document.getElementById('o-diag').value.trim(),
+    medico:document.getElementById('o-med').value.trim(),
+    aseguradora:document.getElementById('o-aseg').value.trim(),
+    triage:document.getElementById('o-triage').value,
+    destino:document.getElementById('o-dest').value,
+    fechaEgreso:document.getElementById('o-feg').value,
+    horaEgreso:document.getElementById('o-heg').value,
+  };
+  if(id){ const i=DB.obs.findIndex(r=>r.id===id); if(i>-1) DB.obs[i]=d; }
+  else DB.obs.push(d);
+  showLoader('💾 Guardando…');
+  await apiCall({action:id?'update':'save', section:'obs', record:d});
+  hideLoader(); closeModal('modalObs'); renderObs();
+  toast('✓ Paciente guardado');
+}
+
+// -- ELIMINAR ------------------------------------------------------------------
+async function eliminar(id,seccion){
+  if(!confirm('¿Eliminar este registro?')) return;
+  DB[seccion]=DB[seccion].filter(r=>r.id!==id);
+  showLoader('🗑 Eliminando…');
+  await apiCall({action:'delete',section:seccion,id});
+  hideLoader(); renderCenso(); renderObs(); closeModal('modalCenso'); closeModal('modalObs');
+  toast('Registro eliminado','error');
+}
+
+// -- EXPORTAR CSV --------------------------------------------------------------
+function exportarCSV(){
+  const hoy=dk(cur);
+  const data=DB.censo.filter(r=>r.fecha===hoy);
+  if(!data.length){toast('Sin datos para exportar','error');return;}
+  const keys=Object.keys(data[0]);
+  const csv=[keys.join(','),...data.map(r=>keys.map(k=>`"${(r[k]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`urgencias_${hoy}.csv`;
+  a.click(); toast('CSV exportado');
+}
+
+// -- CONCENTRADO ---------------------------------------------------------------
+function renderConcentrado(){
+  const mes=parseInt(document.getElementById('con-mes').value);
+  const anio=parseInt(document.getElementById('con-anio').value);
+  const enMes=arr=>arr.filter(r=>{
+    const fd=r.fecha||r.fechaIngreso; if(!fd) return false;
+    const d=new Date(fd+'T12:00');
+    return d.getFullYear()===anio&&d.getMonth()===mes;
+  });
+  const censo=enMes(DB.censo);
+  const obs=enMes(DB.obs);
+  const diasMes=new Date(anio,mes+1,0).getDate();
+  const diasConAct=[...new Set(censo.map(r=>r.fecha).filter(Boolean))].length||1;
+
+  // -- TIEMPOS ----------------------------------------------------------------
+  const tiemposRegTriage=censo.map(r=>minEntre(r.horaRegistro,r.horaTriage)).filter(v=>v!==null&&v>=0);
+  const tiemposTriageAten=censo.map(r=>minEntre(r.horaTriage,r.horaAtencion)).filter(v=>v!==null&&v>=0);
+  const tiemposEstancia=censo.map(r=>minEntre(r.horaRegistro,r.horaEgreso)).filter(v=>v!==null&&v>0);
+  const conEstancia=censo.filter(r=>r.horaRegistro&&r.horaEgreso);
+  const masde6hMes=conEstancia.filter(r=>{ const m=minEntre(r.horaRegistro,r.horaEgreso); return m!==null&&m>360; }).length;
+  const pctMasde6h=conEstancia.length?Math.round(masde6hMes/conEstancia.length*1000)/10:0;
+  const promRegTriage=tiemposRegTriage.length?Math.round(tiemposRegTriage.reduce((a,b)=>a+b,0)/tiemposRegTriage.length):null;
+  const promTriageAten=tiemposTriageAten.length?Math.round(tiemposTriageAten.reduce((a,b)=>a+b,0)/tiemposTriageAten.length):null;
+  const promEstancia=tiemposEstancia.length?Math.round(tiemposEstancia.reduce((a,b)=>a+b,0)/tiemposEstancia.length):null;
+
+  // -- TRIAGE -----------------------------------------------------------------
+  const rojos=censo.filter(r=>r.triage==='Rojo').length;
+  const amarillos=censo.filter(r=>r.triage==='Amarillo').length;
+  const verdes=censo.filter(r=>r.triage==='Verde').length;
+  const defTriaje=censo.filter(r=>r.destino==='Defunción').length;
+
+  // -- CAMBIOS DE TRIAGE ------------------------------------------------------
+  const cambioAm=censo.filter(r=>r.cambioTriage==='Amarillo').length;
+  const cambioRo=censo.filter(r=>r.cambioTriage==='Rojo').length;
+  const totalCambios=cambioAm+cambioRo;
+
+  // -- PRIMERA VEZ ------------------------------------------------------------
+  const primeraVez=censo.filter(r=>r.primeraVez==='Sí').length;
+
+  // -- MORTALIDAD -------------------------------------------------------------
+  const defunciones=censo.filter(r=>r.destino==='Defunción').length;
+  const pctMort=censo.length?Math.round(defunciones/censo.length*1000)/10:0;
+
+  // -- EVENTOS ADVERSOS -------------------------------------------------------
+  const eventosAdv=censo.filter(r=>r.eventoAdverso==='Si').length;
+
+  // -- C?DIGOS ----------------------------------------------------------------
+  const codOro=censo.filter(r=>r.codigo==='Oro / Mater').length;
+  const codInfarto=censo.filter(r=>r.codigo==='Infarto').length;
+  const codSepsis=censo.filter(r=>r.codigo==='Sepsis').length;
+  const codCerebro=censo.filter(r=>r.codigo==='Cerebro').length;
+  const totalCodigos=codOro+codInfarto+codSepsis+codCerebro;
+
+  // -- DESTINOS ---------------------------------------------------------------
+  const destHosp=censo.filter(r=>r.destino==='Hospitalización').length;
+  const destQx=censo.filter(r=>r.destino==='Quirófano').length;
+  const destDom=censo.filter(r=>r.destino==='Domicilio').length;
+  const destAltaVol=censo.filter(r=>r.destino==='Alta voluntaria').length;
+  const destRef=censo.filter(r=>r.destino==='Referencia').length;
+  const pctHosp=censo.length?Math.round(destHosp/censo.length*1000)/10:0;
+  const pctQx=censo.length?Math.round(destQx/censo.length*1000)/10:0;
+
+  // -- REINGRESOS (mismo expediente dentro de 72h de la primera atencion) ----
+  const conExp = censo.filter(r=>r.expediente&&r.fecha);
+  const reingresos = conExp.filter(r=>{
+    const d0 = new Date(r.fecha+'T12:00');
+    return conExp.some(o=>
+      o.id !== r.id &&
+      o.expediente === r.expediente &&
+      new Date(o.fecha+'T12:00') > d0 &&
+      new Date(o.fecha+'T12:00') - d0 <= 72*3600000
+    );
+  }).length;
+
+  // -- OBSERVACI?N ------------------------------------------------------------
+  const egresosObs=obs.filter(r=>r.fechaEgreso).length;
+  const diasPacObs=obs.reduce((s,r)=>{
+    const fi=r.fechaIngreso?new Date(r.fechaIngreso+'T12:00'):null; if(!fi) return s;
+    const fe=r.fechaEgreso?new Date(r.fechaEgreso+'T12:00'):new Date(anio,mes+1,0);
+    const ini=new Date(Math.max(fi,new Date(anio,mes,1)));
+    const fin=new Date(Math.min(fe,new Date(anio,mes+1,0)));
+    return s+Math.max(0,Math.round((fin-ini)/(1000*60*60*24))+1);
+  },0)||obs.length;
+  const pctOcupObs=Math.round(diasPacObs/(CAMAS_OBS*diasMes)*1000)/10;
+  const promEstObs=egresosObs?Math.round(diasPacObs/egresosObs*10)/10:0;
+
+  function ic(color,titulo,formula,valor,desc,barPct){
+    return `<div class="ind-card">
+      <div class="ind-hdr"><div class="ind-dot" style="background:${color}"></div><span class="ind-ttl">${titulo}</span></div>
+      ${formula?`<div class="ind-formula">${formula}</div>`:''}
+      <div class="ind-val" style="color:${color}">${valor}</div>
+      <div class="ind-desc">${desc}</div>
+      <div class="ind-bar"><div class="ind-fill" style="width:${Math.min(barPct||0,100)}%;background:${color}"></div></div>
+    </div>`;
+  }
+
+  document.getElementById('concentrado-body').innerHTML=`
+    <div style="font-size:16px;font-weight:600;color:var(--gris7);margin-bottom:14px">
+      ${MESES[mes]} ${anio} &nbsp;|&nbsp; <span style="font-size:12px;font-weight:400;color:var(--gris4)">${diasConAct} días con actividad - ${diasMes} días en el mes</span>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="stat-card"><div class="stat-lbl">Total pacientes</div><div class="stat-val" style="color:var(--rojo)">${censo.length}</div><div class="stat-sub">Prom. diario: ${Math.round(censo.length/diasConAct*10)/10}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Primera vez</div><div class="stat-val" style="color:var(--az)">${primeraVez}</div><div class="stat-sub">${censo.length?Math.round(primeraVez/censo.length*100):0}% del total</div></div>
+      <div class="stat-card"><div class="stat-lbl">Defunciones</div><div class="stat-val" style="color:var(--gris6)">${defunciones}</div><div class="stat-sub">Tasa: ${pctMort}%</div></div>
+      <div class="stat-card"><div class="stat-lbl">Eventos adversos</div><div class="stat-val" style="color:var(--naranja2)">${eventosAdv}</div><div class="stat-sub">${censo.length?Math.round(eventosAdv/censo.length*100):0}% del total</div></div>
+    </div>
+
+    <!-- TIEMPOS -->
+    <div class="ind-grid-3" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">⏱ Tiempos de Atención</div>
+      ${ic('var(--rojo)','Registro -> Triage','promedio de minutos',fmtMin(promRegTriage),`Calculado sobre ${tiemposRegTriage.length} registros con ambas horas`,promRegTriage!==null?Math.min(promRegTriage/30*100,100):0)}
+      ${ic('var(--amarillo)','Triage -> Atención médica','promedio de minutos',fmtMin(promTriageAten),`Calculado sobre ${tiemposTriageAten.length} registros - Meta: <30 min para Rojo`,promTriageAten!==null?Math.min(promTriageAten/60*100,100):0)}
+      ${ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(promEstancia),`Calculado sobre ${tiemposEstancia.length} registros con hora registro y egreso`,promEstancia!==null?Math.min(promEstancia/480*100,100):0)}
+      ${ic('var(--rojo)','Pacientes con estancia > 6 horas','(pac. +6h / pac. con egreso) × 100',pctMasde6h+'%',`${masde6hMes} pacientes de ${conEstancia.length} con hora de egreso registrada`,Math.min(pctMasde6h,100))}
+    </div>
+
+    <!-- TRIAGE -->
+    <div class="ind-grid-3" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">🚦 Clasificación por Semáforo</div>
+      <div class="ind-card">
+        <div class="ind-hdr"><div class="ind-dot" style="background:#7C0A02"></div><span class="ind-ttl">Distribución por Triage</span></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+          ${[['🔴 Rojo',rojos,'var(--rojo)','var(--rojo3)'],['🟡 Amarillo',amarillos,'var(--amarillo)','var(--amarillo3)'],['🟢 Verde',verdes,'var(--verde)','var(--verde3)']].map(([n,v,c,bg])=>`
+          <div style="flex:1;min-width:80px;background:${bg};border-radius:8px;padding:8px 10px;text-align:center">
+            <div style="font-size:10px;color:${c};font-weight:700;margin-bottom:2px">${n}</div>
+            <div style="font-size:22px;font-weight:700;color:${c}">${v}</div>
+            <div style="font-size:9px;color:${c}">${censo.length?Math.round(v/censo.length*100):0}%</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Cambios en Clasificación de Triage</span></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+          ${[['-> Amarillo',cambioAm,'var(--amarillo)'],['-> Rojo',cambioRo,'var(--rojo)'],['Total',totalCambios,'var(--gris6)']].map(([n,v,c])=>`
+          <div style="flex:1;min-width:70px;text-align:center">
+            <div style="font-size:10px;color:${c};font-weight:700;margin-bottom:2px">${n}</div>
+            <div style="font-size:22px;font-weight:700;color:${c}">${v}</div>
+          </div>`).join('')}
+        </div>
+        <div class="ind-bar" style="margin-top:8px"><div class="ind-fill" style="width:${censo.length?Math.min(totalCambios/censo.length*100,100):0}%;background:var(--naranja2)"></div></div>
+      </div>
+      ${ic('var(--gris5)','Mortalidad','(defunciones / total pacientes) × 100',pctMort+'%',`${defunciones} defunciones de ${censo.length} pacientes atendidos`,Math.min(pctMort*5,100))}
+    </div>
+
+    <!-- CÓDIGOS -->
+    <div class="ind-grid-2" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">🚨 Códigos Activados</div>
+      <div class="ind-card" style="grid-column:1/-1">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+          ${[['Oro / Mater',codOro,'var(--morado)'],['Infarto',codInfarto,'var(--rojo)'],['Sepsis',codSepsis,'var(--naranja2)'],['Cerebro',codCerebro,'var(--az2)'],['Total',totalCodigos,'var(--gris6)']].map(([n,v,c])=>`
+          <div style="flex:1;min-width:90px;text-align:center">
+            <div style="font-size:10px;color:${c};font-weight:700;margin-bottom:3px">${n}</div>
+            <div style="font-size:26px;font-weight:700;color:${c}">${v}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- DESTINOS -->
+    <div class="ind-grid-3" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">🏁 Destino de los Pacientes</div>
+      <div class="ind-card" style="grid-column:1/-1">
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          ${[['Hospitalización',destHosp,'var(--az)'],['Quirófano',destQx,'var(--rojo)'],['Domicilio',destDom,'var(--verde)'],['Alta voluntaria',destAltaVol,'var(--gris5)'],['Referencia',destRef,'var(--morado)'],['Defunción',defunciones,'var(--gris4)']].map(([n,v,c])=>`
+          <div style="flex:1;min-width:100px;text-align:center">
+            <div style="font-size:10px;color:${c};font-weight:700;margin-bottom:2px">${n}</div>
+            <div style="font-size:22px;font-weight:700;color:${c}">${v}</div>
+            <div style="font-size:9px;color:${c}">${censo.length?Math.round(v/censo.length*100):0}%</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) × 100',pctHosp+'%',`${destHosp} de ${censo.length} pacientes ingresaron a hospitalización`,pctHosp)}
+      ${ic('var(--rojo)','% Ingreso a Quirófano','(quirófano / total) × 100',pctQx+'%',`${destQx} de ${censo.length} pacientes fueron a quirófano`,pctQx)}
+      ${ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,`${reingresos} paciente${reingresos!==1?'s':''} regresaron a urgencias en menos de 72 horas`,Math.min(reingresos/(censo.length||1)*100*5,100))}
+    </div>
+
+    <!-- OBSERVACIÓN -->
+    <div class="ind-grid-3" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">🛏 Área de Observación</div>
+      ${ic('var(--az2)','% Ocupación Observación','(pac-día / camas×días) × 100',pctOcupObs+'%',`${diasPacObs} pac-día de ${CAMAS_OBS*diasMes} disponibles (${CAMAS_OBS} camas × ${diasMes} días)`,pctOcupObs)}
+      ${ic('var(--verde)','Estancia promedio Observación','días estancia / egresos',promEstObs+' días',`${egresosObs} egresos en el mes`,Math.min(promEstObs/7*100,100))}
+      ${ic('var(--morado)','Total ingresos Observación','suma del mes',obs.length,`${egresosObs} egresos - ${obs.length-egresosObs} activos al fin del mes`,Math.min(obs.length/CAMAS_OBS*100,100))}
+    </div>`;
+}
+
+// -- INIT ----------------------------------------------------------------------
+actualizarFechas();
+cargarDatos();
+</script>
+</body>
+</html>
 :root{
   --rojo:#7C0A02;--rojo2:#C0392B;--rojo3:#FDECEA;
   --amarillo:#856404;--amarillo2:#F59E0B;--amarillo3:#FEF9C3;
