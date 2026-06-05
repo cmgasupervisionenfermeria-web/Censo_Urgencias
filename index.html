@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#7C0A02">
-<title>Urgencias CMGA</title>
+<title>Urgencias — CMGA</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -344,7 +344,14 @@ async function cargarDatos(){
       ['censo','obs'].forEach(s=>{
         if(Array.isArray(data[s])){
           DB[s]=data[s].map(rec=>{
-            ['fecha','fechaIngreso','fechaEgreso'].forEach(c=>{ if(rec[c]&&typeof rec[c]==='string'&&rec[c].includes('T')) rec[c]=rec[c].split('T')[0]; });
+            ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{ if(rec[c]&&typeof rec[c]==='string'&&rec[c].includes('T')) rec[c]=rec[c].split('T')[0]; });
+            ['horaRegistro','horaTriage','horaAtencion','horaEgreso','horaActivacionCodigo','horaIngreso'].forEach(c=>{
+              if(rec[c]&&typeof rec[c]==='string'&&rec[c].includes('T')){
+                const d=new Date(rec[c]);
+                const hh=d.getUTCHours(), mm=d.getUTCMinutes();
+                rec[c]=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+              }
+            });
             return rec;
           });
         }
@@ -845,6 +852,12 @@ function renderConcentrado(){
       ${ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,`${reingresos} paciente${reingresos!==1?'s':''} regresaron a urgencias en menos de 72 horas`,Math.min(reingresos/(censo.length||1)*100*5,100))}
     </div>
 
+    <!-- OBSERVACIÓN -->
+    <div class="ind-grid-3" style="margin-bottom:12px">
+      <div class="group-title" style="grid-column:1/-1">🛏 Área de Observación</div>
+      ${ic('var(--az2)','% Ocupación Observación','(pac-día / camas×días) × 100',pctOcupObs+'%',`${diasPacObs} pac-día de ${CAMAS_OBS*diasMes} disponibles (${CAMAS_OBS} camas × ${diasMes} días)`,pctOcupObs)}
+      ${ic('var(--verde)','Estancia promedio Observación','días estancia / egresos',promEstObs+' días',`${egresosObs} egresos en el mes`,Math.min(promEstObs/7*100,100))}
+      ${ic('var(--morado)','Total ingresos Observación','suma del mes',obs.length,`${egresosObs} egresos - ${obs.length-egresosObs} activos al fin del mes`,Math.min(obs.length/CAMAS_OBS*100,100))}
     </div>`;
 }
 
