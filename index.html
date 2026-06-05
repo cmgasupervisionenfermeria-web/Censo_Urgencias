@@ -845,13 +845,6 @@ function renderConcentrado(){
       ${ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,`${reingresos} paciente${reingresos!==1?'s':''} regresaron a urgencias en menos de 72 horas`,Math.min(reingresos/(censo.length||1)*100*5,100))}
     </div>
 
-    <!-- OBSERVACIÓN -->
-    <div class="ind-grid-3" style="margin-bottom:12px">
-      <div class="group-title" style="grid-column:1/-1">🛏 Área de Observación</div>
-      ${ic('var(--az2)','% Ocupación Observación','(pac-día / camas×días) × 100',pctOcupObs+'%',`${diasPacObs} pac-día de ${CAMAS_OBS*diasMes} disponibles (${CAMAS_OBS} camas × ${diasMes} días)`,pctOcupObs)}
-      ${ic('var(--verde)','Estancia promedio Observación','días estancia / egresos',promEstObs+' días',`${egresosObs} egresos en el mes`,Math.min(promEstObs/7*100,100))}
-      ${ic('var(--morado)','Total ingresos Observación','suma del mes',obs.length,`${egresosObs} egresos - ${obs.length-egresosObs} activos al fin del mes`,Math.min(obs.length/CAMAS_OBS*100,100))}
-    </div>`;
 }
 
 // -- INIT ----------------------------------------------------------------------
