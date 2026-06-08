@@ -113,86 +113,87 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
 </head>
 <body>
 <nav>
-  <div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
-    <button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
-  </div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
-    <span id="modeLabel" style="background:rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:500">Solo lectura</span>
-    <button id="lockBtn" onclick="toggleLock()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit">🔒 PIN</button>
-  </div>
+<div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
+<div class="nav-tabs">
+<button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
+<button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
+</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
+<span id="modeLabel" style="background:rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:500">Solo lectura 🔒</span>
+<button id="lockBtn" onclick="toggleLock()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit">PIN</button>
+</div>
 </nav>
 
 <div class="pin-modal" id="pinModal">
-  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center">
-    <div style="font-size:36px;margin-bottom:10px">🔐</div>
-    <div style="font-size:17px;font-weight:600;margin-bottom:6px">Acceso de edicion</div>
-    <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">Ingresa el PIN para modificar el censo</div>
-    <input id="pinInput" type="password" maxlength="6" placeholder="......" onkeydown="if(event.key==='Enter')verifyPin()"
-      style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid #CBD5E1;border-radius:10px;font-family:'DM Mono',monospace;letter-spacing:.3em;margin-bottom:14px;outline:none">
-    <div id="pinError" style="color:#991B1B;font-size:12px;margin-bottom:10px;min-height:16px"></div>
-    <div style="display:flex;gap:8px">
-      <button onclick="closePinModal()" style="flex:1;padding:9px;border-radius:8px;border:1px solid #CBD5E1;background:transparent;cursor:pointer;font-family:inherit">Cancelar</button>
-      <button onclick="verifyPin()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--rojo);color:#fff;cursor:pointer;font-family:inherit;font-weight:500">Ingresar</button>
-    </div>
-  </div>
+<div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center">
+<div style="font-size:36px;margin-bottom:10px">🔐</div>
+<div style="font-size:17px;font-weight:600;margin-bottom:6px">Acceso de edicion</div>
+<div style="font-size:13px;color:#94A3B8;margin-bottom:18px">Ingresa el PIN para modificar el censo</div>
+<input id="pinInput" type="password" maxlength="6" placeholder="......" onkeydown="if(event.key==='Enter')verifyPin()"
+style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid #CBD5E1;border-radius:10px;font-family:'DM Mono',monospace;letter-spacing:.3em;margin-bottom:14px;outline:none">
+<div id="pinError" style="color:#991B1B;font-size:12px;margin-bottom:10px;min-height:16px"></div>
+<div style="display:flex;gap:8px">
+<button onclick="closePinModal()" style="flex:1;padding:9px;border-radius:8px;border:1px solid #CBD5E1;background:transparent;cursor:pointer;font-family:inherit">Cancelar</button>
+<button onclick="verifyPin()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--rojo);color:#fff;cursor:pointer;font-family:inherit;font-weight:500">Ingresar</button>
+</div>
+</div>
 </div>
 
 <div class="page active" id="page-censo">
-  <div class="top-bar">
-    <div class="date-nav">
-      <button onclick="cambiarDia(-1)">&#8249;</button>
-      <span class="date-lbl" id="dateLabel"></span>
-      <button onclick="cambiarDia(1)">&#8250;</button>
-    </div>
-    <button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
-    <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">&#8595; CSV</button>
-  </div>
-  <div id="statsDay" class="stats-grid" style="grid-template-columns:repeat(6,1fr)"></div>
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">🚨 Pacientes del dia</span>
-      <span id="censo-count" style="font-size:12px;color:var(--gris4)"></span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>#</th><th>Fecha</th><th>H. Registro</th><th>H. Triage</th><th>H. Atencion</th><th>H. Egreso</th>
-          <th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
-          <th>Diagnostico</th><th>Codigo</th><th>Aseguradora</th><th>1a vez</th>
-          <th>Estancia (h)</th><th>Ev. Adverso</th><th>Medico</th><th>Interconsulta</th>
-          <th>Referido por</th><th>Destino</th><th></th>
-        </tr></thead>
-        <tbody id="censo-tbody"></tbody>
-      </table>
-      <div class="empty" id="censo-empty"><div class="empty-icon">🚨</div><p>Sin pacientes registrados hoy</p></div>
-      <button class="add-row-btn" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
-    </div>
-  </div>
+<div class="top-bar">
+<div class="date-nav">
+<button onclick="cambiarDia(-1)">&#8249;</button>
+<span class="date-lbl" id="dateLabel"></span>
+<button onclick="cambiarDia(1)">&#8250;</button>
+</div>
+<button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
+<button class="btn btn-ghost btn-sm" onclick="exportarCSV()">&#8595; CSV</button>
+</div>
+<div id="statsDay" class="stats-grid" style="grid-template-columns:repeat(6,1fr)"></div>
+<div class="card">
+<div class="card-header">
+<span class="card-title">🚨 Pacientes del dia</span>
+<span id="censo-count" style="font-size:12px;color:var(--gris4)"></span>
+</div>
+<div class="table-wrap">
+<table>
+<thead><tr>
+<th>#</th><th>Fecha</th><th>H. Registro</th><th>H. Triage</th><th>H. Atencion</th><th>H. Egreso</th>
+<th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
+<th>Diagnostico</th><th>Codigo</th><th>Aseguradora</th><th>1a vez</th>
+<th>Estancia (h)</th><th>Ev. Adverso</th><th>Medico</th><th>Interconsulta</th>
+<th>Referido por</th><th>Destino</th><th></th>
+</tr></thead>
+<tbody id="censo-tbody"></tbody>
+</table>
+<div class="empty" id="censo-empty"><div class="empty-icon">🚨</div><p>Sin pacientes registrados hoy</p></div>
+<button class="add-row-btn" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
+</div>
+</div>
 </div>
 
 <div class="page" id="page-concentrado">
-  <div class="top-bar" style="justify-content:space-between">
-    <div style="font-size:16px;font-weight:600;color:var(--gris7)">Concentrado Mensual</div>
-    <div style="display:flex;gap:8px">
-      <select id="con-mes" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
-        <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
-        <option value="3">Abril</option><option value="4">Mayo</option><option value="5" selected>Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
-        <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-      <select id="con-anio" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
-        <option>2026</option><option>2027</option>
-      </select>
-    </div>
-  </div>
-  <div id="concentrado-body"></div>
+<div class="top-bar" style="justify-content:space-between">
+<div style="font-size:16px;font-weight:600;color:var(--gris7)">Concentrado Mensual</div>
+<div style="display:flex;gap:8px">
+<select id="con-mes" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+<option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+<option value="3">Abril</option><option value="4">Mayo</option><option value="5" selected>Junio</option>
+<option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+<option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+</select>
+<select id="con-anio" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+<option>2026</option><option>2027</option>
+</select>
+</div>
+</div>
+<div id="concentrado-body"></div>
 </div>
 
 <div class="modal-bg" id="modalCenso" onclick="if(event.target===this)closeModal('modalCenso')">
-  <div class="modal"><div class="modal-handle"></div><div id="modalCensoContent"></div></div>
+<div class="modal"><div class="modal-handle"></div><div id="modalCensoContent"></div></div>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -207,8 +208,24 @@ let cur = new Date(); cur.setHours(0,0,0,0);
 let pinOK = false, pinCB = null, nid = 1;
 let DB = { censo:[] };
 
+// ─── Utilidades de fecha/hora ────────────────────────────────────────────────
+
 function dk(d){ if(typeof d==='string') d=new Date(d+'T12:00:00'); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
 function fmt(d){ const days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return days[d.getDay()]+', '+d.getDate()+' de '+m[d.getMonth()]+' de '+d.getFullYear(); }
+
+/* ✅ FIX: hora local del dispositivo, no UTC */
+function horaActual(){
+  var n=new Date();
+  return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+/* ✅ FIX: convierte timestamp ISO a hora local (no UTC) */
+function isoAHoraLocal(isoStr){
+  var d=new Date(isoStr);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
 function toast(msg,tipo){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+(tipo||'success'); setTimeout(()=>t.className='toast',3000); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function showLoader(m){ let el=document.getElementById('lb'); if(!el){el=document.createElement('div');el.id='lb';el.style.cssText='position:fixed;top:54px;left:0;right:0;background:var(--rojo);color:#fff;text-align:center;padding:6px;font-size:12px;z-index:300';document.body.appendChild(el);} el.textContent=m; el.style.display='block'; }
@@ -224,14 +241,20 @@ function fmtMin(m){ if(m===null||m===undefined) return '-'; const h=Math.floor(m
 function triageChip(t){ if(!t) return '-'; const m={Rojo:'triage-rojo',Amarillo:'triage-amarillo',Verde:'triage-verde'}; return '<span class="'+(m[t]||'')+'">'+t+'</span>'; }
 function calcEdadLocal(fnac){ if(!fnac) return ''; const n=new Date(fnac+'T12:00'),h=new Date(); let e=h.getFullYear()-n.getFullYear(); if(h.getMonth()-n.getMonth()<0||(h.getMonth()-n.getMonth()===0&&h.getDate()<n.getDate())) e--; return e>=0?e:''; }
 
+// ─── PIN ──────────────────────────────────────────────────────────────────────
+
 function requirePin(cb){ if(pinOK){cb();return;} pinCB=cb; document.getElementById('pinInput').value=''; document.getElementById('pinError').textContent=''; document.getElementById('pinModal').classList.add('open'); setTimeout(()=>document.getElementById('pinInput').focus(),100); }
-function verifyPin(){ if(document.getElementById('pinInput').value===PIN){ pinOK=true; document.getElementById('pinModal').classList.remove('open'); document.getElementById('modeLabel').textContent='Editor'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.25)'; document.getElementById('lockBtn').textContent='Salir'; toast('Modo edicion activado'); if(pinCB){pinCB();pinCB=null;} } else { document.getElementById('pinError').textContent='PIN incorrecto'; document.getElementById('pinInput').value=''; } }
+function verifyPin(){ if(document.getElementById('pinInput').value===PIN){ pinOK=true; document.getElementById('pinModal').classList.remove('open'); document.getElementById('modeLabel').textContent='Editor ✏️'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.25)'; document.getElementById('lockBtn').textContent='Salir'; toast('Modo edicion activado'); if(pinCB){pinCB();pinCB=null;} } else { document.getElementById('pinError').textContent='PIN incorrecto'; document.getElementById('pinInput').value=''; } }
 function closePinModal(){ document.getElementById('pinModal').classList.remove('open'); pinCB=null; }
-function toggleLock(){ if(pinOK){ pinOK=false; document.getElementById('modeLabel').textContent='Solo lectura'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.2)'; document.getElementById('lockBtn').textContent='PIN'; toast('Modo solo lectura'); } else requirePin(()=>{}); }
+function toggleLock(){ if(pinOK){ pinOK=false; document.getElementById('modeLabel').textContent='Solo lectura 🔒'; document.getElementById('modeLabel').style.background='rgba(255,255,255,.2)'; document.getElementById('lockBtn').textContent='PIN'; toast('Modo solo lectura'); } else requirePin(()=>{}); }
+
+// ─── Navegación ───────────────────────────────────────────────────────────────
 
 function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); actualizarFechas(); if(id==='censo') renderCenso(); if(id==='concentrado') renderConcentrado(); }
 function cambiarDia(d){ cur.setDate(cur.getDate()+d); actualizarFechas(); renderCenso(); }
 function actualizarFechas(){ document.getElementById('dateLabel').textContent=fmt(cur); }
+
+// ─── Persistencia ─────────────────────────────────────────────────────────────
 
 function guardarLocal(){ try{ localStorage.setItem('urg_v3',JSON.stringify({db:DB,nid:nid})); }catch(e){} }
 function cargarLocal(){ try{ const r=localStorage.getItem('urg_v3'); if(!r) return false; const p=JSON.parse(r); if(p.db&&Array.isArray(p.db.censo)) DB.censo=p.db.censo; if(p.nid) nid=p.nid; return true; }catch(e){ return false; } }
@@ -264,11 +287,13 @@ async function cargarDatos(){
     if(data&&typeof data==='object'){
       if(Array.isArray(data.censo)){
         DB.censo=data.censo.map(rec=>{
-          ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{ if(rec[c]&&String(rec[c]).includes('T')) rec[c]=String(rec[c]).split('T')[0]; });
+          ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{
+            if(rec[c]&&String(rec[c]).includes('T')) rec[c]=String(rec[c]).split('T')[0];
+          });
+          // ✅ FIX PRINCIPAL: usar getHours/getMinutes (hora LOCAL) en vez de getUTCHours/getUTCMinutes
           ['horaRegistro','horaTriage','horaAtencion','horaEgreso','horaActivacionCodigo'].forEach(c=>{
             if(rec[c]&&String(rec[c]).includes('T')){
-              const d=new Date(rec[c]);
-              rec[c]=String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
+              rec[c]=isoAHoraLocal(rec[c]);
             }
           });
           return rec;
@@ -280,19 +305,19 @@ async function cargarDatos(){
   hideLoader(); actualizarFechas(); renderCenso();
 }
 
+// ─── Render tabla censo ───────────────────────────────────────────────────────
+
 function renderCenso(){
   const hoy=dk(cur);
   const data=DB.censo.filter(r=>r.fecha===hoy).sort((a,b)=>(Number(a.num)||0)-(Number(b.num)||0));
   const tbody=document.getElementById('censo-tbody');
   const empty=document.getElementById('censo-empty');
   document.getElementById('censo-count').textContent=data.length+' paciente'+(data.length!==1?'s':'');
-
   const rojos=data.filter(r=>r.triage==='Rojo').length;
   const amarillos=data.filter(r=>r.triage==='Amarillo').length;
   const verdes=data.filter(r=>r.triage==='Verde').length;
   const hosps=data.filter(r=>r.destino==='Hospitalizacion').length;
   const masde6h=data.filter(r=>{ const m=minEntre(r.horaRegistro,r.horaEgreso); return m!==null&&m>360; }).length;
-
   document.getElementById('statsDay').innerHTML=
     '<div class="stat-card"><div class="stat-lbl">Total del dia</div><div class="stat-val" style="color:var(--rojo)">'+data.length+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">🔴 Rojo</div><div class="stat-val" style="color:var(--rojo)">'+rojos+'</div></div>'+
@@ -300,10 +325,8 @@ function renderCenso(){
     '<div class="stat-card"><div class="stat-lbl">🟢 Verde</div><div class="stat-val" style="color:var(--verde)">'+verdes+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">Hospitalizados</div><div class="stat-val" style="color:var(--az)">'+hosps+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">+6 horas</div><div class="stat-val" style="color:'+(masde6h>0?'var(--rojo)':'var(--gris4)')+'">'+masde6h+'</div></div>';
-
   if(!data.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-
   tbody.innerHTML=data.map(function(r){
     const estMin=minEntre(r.horaRegistro,r.horaEgreso);
     const estH=estMin!==null?Math.round(estMin/60*10)/10:null;
@@ -317,15 +340,13 @@ function renderCenso(){
     const rowStyle=masde6?'background:#FFF5F5;border-left:3px solid var(--rojo2);':'';
     var estCelda;
     if(estH!==null){
-      estCelda='<span style="font-weight:600;color:'+(estH>6?'var(--rojo)':'var(--gris6)')+'">'+estH+' h'+(estH>6?' !':'')+' </span>';
+      estCelda='<span style="font-weight:600;color:'+(estH>6?'var(--rojo)':'var(--gris6)')+'">'+estH+' h'+(estH>6?' !':'')+'</span>';
     } else if(estMinActual!==null){
       var ea=Math.round(estMinActual/60*10)/10;
-      estCelda='<span style="font-weight:600;color:'+(estMinActual>360?'var(--rojo)':'var(--gris6)')+'">~'+ea+' h'+(estMinActual>360?' !':'')+' </span>';
+      estCelda='<span style="font-weight:600;color:'+(estMinActual>360?'var(--rojo)':'var(--gris6)')+'">~'+ea+' h'+(estMinActual>360?' !':'')+'</span>';
     } else { estCelda='-'; }
-
     var codigoCelda=r.codigo&&r.codigo!=='Ninguno'?('<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">'+r.codigo+'</span>'):'-';
     var evCelda=r.eventoAdverso==='Si'?('<span style="color:var(--rojo);font-weight:700" title="'+(r.eventoAdversoTipo||'')+'">! '+(r.eventoAdversoTipo||'Si')+'</span>'):'-';
-
     return '<tr onclick="requirePin(()=>abrirModal('+r.id+'))" style="'+rowStyle+'">'+
       '<td style="font-weight:600;color:var(--gris4)">'+(r.num||'-')+'</td>'+
       '<td style="font-size:11px">'+(r.fecha||'-')+'</td>'+
@@ -354,68 +375,77 @@ function renderCenso(){
   }).join('');
 }
 
+// ─── Modal de registro ────────────────────────────────────────────────────────
+
 function abrirModal(id){
   var rec=id?DB.censo.find(r=>r.id===id)||{}:{};
+  var esNuevo=!id;
   var tv=rec.triage||'';
-  var horaOpts=function(val){ return ['','Rojo','Amarillo','Verde'].map(function(v){ return '<option value="'+v+'"'+(rec.cambioTriage===v?' selected':'')+'>'+v+'</option>'; }).join(''); };
   var destsOpts=DESTINOS.map(function(d){ return '<option'+(rec.destino===d?' selected':'')+'>'+d+'</option>'; }).join('');
   var codOpts=CODIGOS.map(function(c){ return '<option'+(rec.codigo===c?' selected':'')+'>'+c+'</option>'; }).join('');
   var evTipos=['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'];
   var evTipoOpts=evTipos.map(function(t){ return '<option value="'+t+'"'+(rec.eventoAdversoTipo===t?' selected':'')+'>'+t+'</option>'; }).join('');
 
+  // ✅ FIX: al crear nuevo registro, H.Registro = hora actual; las demás vacías
+  // Al editar, se usan exactamente los valores guardados (ya corregidos en cargarDatos)
+  var valHReg  = esNuevo ? horaActual()       : (rec.horaRegistro||'');
+  var valHTri  = esNuevo ? ''                 : (rec.horaTriage||'');
+  var valHAten = esNuevo ? ''                 : (rec.horaAtencion||'');
+  var valHEgr  = esNuevo ? ''                 : (rec.horaEgreso||'');
+
   document.getElementById('modalCensoContent').innerHTML=
     '<div class="modal-title">'+(id?'Editar registro':'Nuevo paciente - Urgencias')+
-    '<button class="modal-close" onclick="closeModal(\'modalCenso\')">x</button></div>'+
+    '<button class="modal-close" onclick="closeModal(\'modalCenso\')">✕</button></div>'+
     '<div class="section-lbl">Datos del registro</div>'+
     '<div class="form-grid-4">'+
-      '<div class="form-group"><label>Fecha</label><input type="date" id="c-fecha" value="'+(rec.fecha||dk(cur))+'"></div>'+
-      '<div class="form-group"><label>H. Registro</label><input type="time" id="c-hreg" value="'+(rec.horaRegistro||'')+'"></div>'+
-      '<div class="form-group"><label>H. Triage</label><input type="time" id="c-htriage" value="'+(rec.horaTriage||'')+'"></div>'+
-      '<div class="form-group"><label>H. Atencion medica</label><input type="time" id="c-haten" value="'+(rec.horaAtencion||'')+'"></div>'+
-      '<div class="form-group"><label>H. Egreso</label><input type="time" id="c-hegr" value="'+(rec.horaEgreso||'')+'"></div>'+
-      '<div class="form-group"><label>Primera vez?</label>'+
-        '<select id="c-pvez"><option value="">-</option><option'+(rec.primeraVez==='Si'?' selected':'')+'>Si</option><option'+(rec.primeraVez==='No'?' selected':'')+'>No</option></select></div>'+
+    '<div class="form-group"><label>Fecha</label><input type="date" id="c-fecha" value="'+(rec.fecha||dk(cur))+'"></div>'+
+    '<div class="form-group"><label>H. Registro</label><input type="time" id="c-hreg" value="'+valHReg+'"></div>'+
+    '<div class="form-group"><label>H. Triage</label><input type="time" id="c-htriage" value="'+valHTri+'"></div>'+
+    '<div class="form-group"><label>H. Atencion medica</label><input type="time" id="c-haten" value="'+valHAten+'"></div>'+
+    '<div class="form-group"><label>H. Egreso</label><input type="time" id="c-hegr" value="'+valHEgr+'"></div>'+
+    '<div class="form-group"><label>Primera vez?</label>'+
+    '<select id="c-pvez"><option value="">-</option><option'+(rec.primeraVez==='Si'?' selected':'')+'>Si</option><option'+(rec.primeraVez==='No'?' selected':'')+'>No</option></select></div>'+
     '</div>'+
     '<div class="section-lbl">Triage - Semaforo</div>'+
     '<div class="triage-btns">'+
-      '<button class="triage-btn rojo'+(tv==='Rojo'?' selected':'')+'" onclick="selTriage(\'Rojo\',this)">🔴 Rojo<br><span style="font-size:10px;font-weight:400">Critico</span></button>'+
-      '<button class="triage-btn amarillo'+(tv==='Amarillo'?' selected':'')+'" onclick="selTriage(\'Amarillo\',this)">🟡 Amarillo<br><span style="font-size:10px;font-weight:400">Urgente</span></button>'+
-      '<button class="triage-btn verde'+(tv==='Verde'?' selected':'')+'" onclick="selTriage(\'Verde\',this)">🟢 Verde<br><span style="font-size:10px;font-weight:400">No urgente</span></button>'+
+    '<button class="triage-btn rojo'+(tv==='Rojo'?' selected':'')+'" onclick="selTriage(\'Rojo\',this)">🔴 Rojo<br><span style="font-size:10px;font-weight:400">Critico</span></button>'+
+    '<button class="triage-btn amarillo'+(tv==='Amarillo'?' selected':'')+'" onclick="selTriage(\'Amarillo\',this)">🟡 Amarillo<br><span style="font-size:10px;font-weight:400">Urgente</span></button>'+
+    '<button class="triage-btn verde'+(tv==='Verde'?' selected':'')+'" onclick="selTriage(\'Verde\',this)">🟢 Verde<br><span style="font-size:10px;font-weight:400">No urgente</span></button>'+
     '</div>'+
     '<input type="hidden" id="c-triage" value="'+tv+'">'+
     '<div style="margin-top:10px" class="form-grid">'+
-      '<div class="form-group"><label>Cambio en clasificacion Triage</label>'+
-        '<select id="c-cambiotriage"><option value="">Sin cambio</option><option'+(rec.cambioTriage==='Amarillo'?' selected':'')+'>Amarillo</option><option'+(rec.cambioTriage==='Rojo'?' selected':'')+'>Rojo</option></select></div>'+
-      '<div class="form-group"><label>Codigo activado</label><select id="c-codigo">'+codOpts+'</select></div>'+
-      '<div class="form-group"><label>Hora activacion codigo</label><input type="time" id="c-hcod" value="'+(rec.horaActivacionCodigo||'')+'"></div>'+
+    '<div class="form-group"><label>Cambio en clasificacion Triage</label>'+
+    '<select id="c-cambiotriage"><option value="">Sin cambio</option><option'+(rec.cambioTriage==='Amarillo'?' selected':'')+'>Amarillo</option><option'+(rec.cambioTriage==='Rojo'?' selected':'')+'>Rojo</option></select></div>'+
+    '<div class="form-group"><label>Codigo activado</label><select id="c-codigo">'+codOpts+'</select></div>'+
+    '<div class="form-group"><label>Hora activacion codigo</label><input type="time" id="c-hcod" value="'+(rec.horaActivacionCodigo||'')+'"></div>'+
     '</div>'+
     '<div class="section-lbl">Paciente</div>'+
     '<div class="form-grid-3">'+
-      '<div class="form-group full"><label>Nombre del paciente</label><input id="c-pac" value="'+(rec.paciente||'')+'" placeholder="Apellidos, Nombre"></div>'+
-      '<div class="form-group"><label>N Expediente</label><input id="c-exp" value="'+(rec.expediente||'')+'" placeholder="EXP-001"></div>'+
-      '<div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="'+(rec.fechaNac||'')+'" onchange="document.getElementById(\'c-edad\').value=calcEdadLocal(this.value)"></div>'+
-      '<div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="'+(rec.edad||'')+'" min="0" placeholder="Calculada auto."></div>'+
-      '<div class="form-group"><label>Sexo</label>'+
-        '<select id="c-sexo"><option value="">-</option><option value="M"'+(rec.sexo==='M'?' selected':'')+'>Masculino</option><option value="F"'+(rec.sexo==='F'?' selected':'')+'>Femenino</option></select></div>'+
-      '<div class="form-group full"><label>Diagnostico</label><input id="c-diag" value="'+(rec.diagnostico||'')+'"></div>'+
-      '<div class="form-group"><label>Aseguradora</label><input id="c-aseg" value="'+(rec.aseguradora||'')+'"></div>'+
+    '<div class="form-group full"><label>Nombre del paciente</label><input id="c-pac" value="'+(rec.paciente||'')+'" placeholder="Apellidos, Nombre"></div>'+
+    '<div class="form-group"><label>N Expediente</label><input id="c-exp" value="'+(rec.expediente||'')+'" placeholder="EXP-001"></div>'+
+    '<div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="'+(rec.fechaNac||'')+'" onchange="document.getElementById(\'c-edad\').value=calcEdadLocal(this.value)"></div>'+
+    '<div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="'+(rec.edad||'')+'" min="0" placeholder="Calculada auto."></div>'+
+    '<div class="form-group"><label>Sexo</label>'+
+    '<select id="c-sexo"><option value="">-</option><option value="M"'+(rec.sexo==='M'?' selected':'')+'>Masculino</option><option value="F"'+(rec.sexo==='F'?' selected':'')+'>Femenino</option></select></div>'+
+    '<div class="form-group full"><label>Diagnostico</label><input id="c-diag" value="'+(rec.diagnostico||'')+'"></div>'+
+    '<div class="form-group"><label>Aseguradora</label><input id="c-aseg" value="'+(rec.aseguradora||'')+'"></div>'+
     '</div>'+
     '<div class="section-lbl">Equipo medico y destino</div>'+
     '<div class="form-grid-3">'+
-      '<div class="form-group"><label>Medico de guardia</label><input id="c-med" value="'+(rec.medico||'')+'"></div>'+
-      '<div class="form-group"><label>Medico interconsulta</label><input id="c-inter" value="'+(rec.interconsulta||'')+'"></div>'+
-      '<div class="form-group"><label>Referido por medico</label><input id="c-ref" value="'+(rec.referidoPor||'')+'"></div>'+
-      '<div class="form-group"><label>Destino del paciente</label><select id="c-dest">'+destsOpts+'</select></div>'+
-      '<div class="form-group"><label>Evento adverso</label>'+
-        '<select id="c-ev" onchange="toggleEvAdverso()"><option value="">-</option><option'+(rec.eventoAdverso==='No'?' selected':'')+'>No</option><option'+(rec.eventoAdverso==='Si'?' selected':'')+'>Si</option></select></div>'+
-      '<div class="form-group" id="c-ev-tipo-wrap" style="display:'+(rec.eventoAdverso==='Si'?'flex':'none')+';flex-direction:column;gap:3px">'+
-        '<label>Tipo de evento adverso</label>'+
-        '<select id="c-ev-tipo"><option value="">Selecciona</option>'+evTipoOpts+'</select></div>'+
+    '<div class="form-group"><label>Medico de guardia</label><input id="c-med" value="'+(rec.medico||'')+'"></div>'+
+    '<div class="form-group"><label>Medico interconsulta</label><input id="c-inter" value="'+(rec.interconsulta||'')+'"></div>'+
+    '<div class="form-group"><label>Referido por medico</label><input id="c-ref" value="'+(rec.referidoPor||'')+'"></div>'+
+    '<div class="form-group"><label>Destino del paciente</label><select id="c-dest">'+destsOpts+'</select></div>'+
+    '<div class="form-group"><label>Evento adverso</label>'+
+    '<select id="c-ev" onchange="toggleEvAdverso()"><option value="">-</option><option'+(rec.eventoAdverso==='No'?' selected':'')+'>No</option><option'+(rec.eventoAdverso==='Si'?' selected':'')+'>Si</option></select></div>'+
+    '<div class="form-group" id="c-ev-tipo-wrap" style="display:'+(rec.eventoAdverso==='Si'?'flex':'none')+';flex-direction:column;gap:3px">'+
+    '<label>Tipo de evento adverso</label>'+
+    '<select id="c-ev-tipo"><option value="">Selecciona</option>'+evTipoOpts+'</select></div>'+
     '</div>'+
     '<div class="form-actions">'+
-      (id?'<button class="btn btn-danger btn-sm" onclick="eliminar('+id+',\'censo\')">Eliminar</button>':'')+
-      '<button class="btn btn-ghost" onclick="closeModal(\'modalCenso\')">Cancelar</button>'+
-      '<button class="btn btn-success" onclick="guardarCenso('+(id||0)+')">Guardar</button>'+
+    (id?'<button class="btn btn-danger btn-sm" onclick="eliminar('+id+',\'censo\')">Eliminar</button>':'')+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalCenso\')">Cancelar</button>'+
+    '<button class="btn btn-success" onclick="guardarCenso('+(id||0)+')">Guardar</button>'+
     '</div>';
   document.getElementById('modalCenso').classList.add('open');
 }
@@ -425,6 +455,7 @@ function selTriage(val,btn){
   document.querySelectorAll('.triage-btn').forEach(function(b){b.classList.remove('selected');});
   btn.classList.add('selected');
 }
+
 function toggleEvAdverso(){
   var val=document.getElementById('c-ev').value;
   document.getElementById('c-ev-tipo-wrap').style.display=val==='Si'?'flex':'none';
@@ -491,17 +522,17 @@ function exportarCSV(){
   a.click(); toast('CSV exportado');
 }
 
+// ─── Concentrado mensual ──────────────────────────────────────────────────────
+
 function renderConcentrado(){
   var mes=parseInt(document.getElementById('con-mes').value);
   var anio=parseInt(document.getElementById('con-anio').value);
-  var diasMes=new Date(anio,mes+1,0).getDate();
   var censo=DB.censo.filter(function(r){
     var fd=r.fecha; if(!fd) return false;
     var d=new Date(fd+'T12:00');
     return d.getFullYear()===anio&&d.getMonth()===mes;
   });
   var diasConAct=[...new Set(censo.map(r=>r.fecha).filter(Boolean))].length||1;
-
   var tRT=censo.map(r=>minEntre(r.horaRegistro,r.horaTriage)).filter(v=>v!==null&&v>=0);
   var tTA=censo.map(r=>minEntre(r.horaTriage,r.horaAtencion)).filter(v=>v!==null&&v>=0);
   var tEst=censo.map(r=>minEntre(r.horaRegistro,r.horaEgreso)).filter(v=>v!==null&&v>0);
@@ -511,7 +542,6 @@ function renderConcentrado(){
   var pRT=tRT.length?Math.round(tRT.reduce((a,b)=>a+b,0)/tRT.length):null;
   var pTA=tTA.length?Math.round(tTA.reduce((a,b)=>a+b,0)/tTA.length):null;
   var pEst=tEst.length?Math.round(tEst.reduce((a,b)=>a+b,0)/tEst.length):null;
-
   var rojos=censo.filter(r=>r.triage==='Rojo').length;
   var amarillos=censo.filter(r=>r.triage==='Amarillo').length;
   var verdes=censo.filter(r=>r.triage==='Verde').length;
@@ -539,7 +569,6 @@ function renderConcentrado(){
       return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')>d0&&(new Date(o.fecha+'T12:00')-d0)<=72*3600000;
     });
   }).length;
-
   function ic(color,titulo,formula,valor,desc,barPct){
     return '<div class="ind-card">'+
       '<div class="ind-hdr"><div class="ind-dot" style="background:'+color+'"></div><span class="ind-ttl">'+titulo+'</span></div>'+
@@ -549,80 +578,80 @@ function renderConcentrado(){
       '<div class="ind-bar"><div class="ind-fill" style="width:'+Math.min(barPct||0,100)+'%;background:'+color+'"></div></div>'+
       '</div>';
   }
-
   document.getElementById('concentrado-body').innerHTML=
     '<div style="font-size:16px;font-weight:600;color:var(--gris7);margin-bottom:14px">'+
-      MESES[mes]+' '+anio+' &nbsp;|&nbsp; <span style="font-size:12px;font-weight:400;color:var(--gris4)">'+diasConAct+' dias con actividad</span>'+
+    MESES[mes]+' '+anio+' &nbsp;|&nbsp; <span style="font-size:12px;font-weight:400;color:var(--gris4)">'+diasConAct+' dias con actividad</span>'+
     '</div>'+
     '<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">'+
-      '<div class="stat-card"><div class="stat-lbl">Total pacientes</div><div class="stat-val" style="color:var(--rojo)">'+censo.length+'</div><div class="stat-sub">Prom. diario: '+Math.round(censo.length/diasConAct*10)/10+'</div></div>'+
-      '<div class="stat-card"><div class="stat-lbl">Primera vez</div><div class="stat-val" style="color:var(--az)">'+primeraVez+'</div><div class="stat-sub">'+(censo.length?Math.round(primeraVez/censo.length*100):0)+'% del total</div></div>'+
-      '<div class="stat-card"><div class="stat-lbl">Defunciones</div><div class="stat-val" style="color:var(--gris6)">'+defunciones+'</div><div class="stat-sub">Tasa: '+pctMort+'%</div></div>'+
-      '<div class="stat-card"><div class="stat-lbl">Eventos adversos</div><div class="stat-val" style="color:var(--naranja2)">'+eventosAdv+'</div><div class="stat-sub">'+(censo.length?Math.round(eventosAdv/censo.length*100):0)+'% del total</div></div>'+
+    '<div class="stat-card"><div class="stat-lbl">Total pacientes</div><div class="stat-val" style="color:var(--rojo)">'+censo.length+'</div><div class="stat-sub">Prom. diario: '+Math.round(censo.length/diasConAct*10)/10+'</div></div>'+
+    '<div class="stat-card"><div class="stat-lbl">Primera vez</div><div class="stat-val" style="color:var(--az)">'+primeraVez+'</div><div class="stat-sub">'+(censo.length?Math.round(primeraVez/censo.length*100):0)+'% del total</div></div>'+
+    '<div class="stat-card"><div class="stat-lbl">Defunciones</div><div class="stat-val" style="color:var(--gris6)">'+defunciones+'</div><div class="stat-sub">Tasa: '+pctMort+'%</div></div>'+
+    '<div class="stat-card"><div class="stat-lbl">Eventos adversos</div><div class="stat-val" style="color:var(--naranja2)">'+eventosAdv+'</div><div class="stat-sub">'+(censo.length?Math.round(eventosAdv/censo.length*100):0)+'% del total</div></div>'+
     '</div>'+
     '<div class="ind-grid-3" style="margin-bottom:12px">'+
-      '<div class="group-title" style="grid-column:1/-1">Tiempos de Atencion</div>'+
-      ic('var(--rojo)','Registro a Triage','promedio de minutos',fmtMin(pRT),'Calculado sobre '+tRT.length+' registros',pRT!==null?Math.min(pRT/30*100,100):0)+
-      ic('var(--amarillo)','Triage a Atencion medica','promedio de minutos',fmtMin(pTA),'Calculado sobre '+tTA.length+' registros - Meta: <30 min para Rojo',pTA!==null?Math.min(pTA/60*100,100):0)+
-      ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(pEst),'Calculado sobre '+tEst.length+' registros',pEst!==null?Math.min(pEst/480*100,100):0)+
-      ic('var(--rojo2)','Pacientes con estancia > 6 horas','(pac +6h / pac con egreso) x 100',pct6+'%',mas6+' pacientes de '+conEst.length+' con hora de egreso registrada',Math.min(pct6,100))+
+    '<div class="group-title" style="grid-column:1/-1">Tiempos de Atencion</div>'+
+    ic('var(--rojo)','Registro a Triage','promedio de minutos',fmtMin(pRT),'Calculado sobre '+tRT.length+' registros',pRT!==null?Math.min(pRT/30*100,100):0)+
+    ic('var(--amarillo)','Triage a Atencion medica','promedio de minutos',fmtMin(pTA),'Calculado sobre '+tTA.length+' registros - Meta: <30 min para Rojo',pTA!==null?Math.min(pTA/60*100,100):0)+
+    ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(pEst),'Calculado sobre '+tEst.length+' registros',pEst!==null?Math.min(pEst/480*100,100):0)+
+    ic('var(--rojo2)','Pacientes con estancia > 6 horas','(pac +6h / pac con egreso) x 100',pct6+'%',mas6+' pacientes de '+conEst.length+' con hora de egreso registrada',Math.min(pct6,100))+
     '</div>'+
     '<div class="ind-grid-3" style="margin-bottom:12px">'+
-      '<div class="group-title" style="grid-column:1/-1">Clasificacion por Semaforo</div>'+
-      '<div class="ind-card">'+
-        '<div class="ind-hdr"><div class="ind-dot" style="background:#7C0A02"></div><span class="ind-ttl">Distribucion por Triage</span></div>'+
-        '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'+
-          [['Rojo',rojos,'var(--rojo)','var(--rojo3)'],['Amarillo',amarillos,'var(--amarillo)','var(--amarillo3)'],['Verde',verdes,'var(--verde)','var(--verde3)']].map(function(x){
-            return '<div style="flex:1;min-width:80px;background:'+x[3]+';border-radius:8px;padding:8px 10px;text-align:center">'+
-              '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
-              '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div>'+
-              '<div style="font-size:9px;color:'+x[2]+'">'+(censo.length?Math.round(x[1]/censo.length*100):0)+'%</div>'+
-              '</div>';
-          }).join('')+
-        '</div>'+
-      '</div>'+
-      '<div class="ind-card">'+
-        '<div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Cambios en Clasificacion de Triage</span></div>'+
-        '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'+
-          [['Amarillo',cambioAm,'var(--amarillo)'],['Rojo',cambioRo,'var(--rojo)'],['Total',cambioAm+cambioRo,'var(--gris6)']].map(function(x){
-            return '<div style="flex:1;min-width:70px;text-align:center">'+
-              '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
-              '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div></div>';
-          }).join('')+
-        '</div>'+
-      '</div>'+
-      ic('var(--gris5)','Mortalidad','(defunciones / total) x 100',pctMort+'%',defunciones+' defunciones de '+censo.length+' pacientes',Math.min(pctMort*5,100))+
+    '<div class="group-title" style="grid-column:1/-1">Clasificacion por Semaforo</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:#7C0A02"></div><span class="ind-ttl">Distribucion por Triage</span></div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'+
+    [['Rojo',rojos,'var(--rojo)','var(--rojo3)'],['Amarillo',amarillos,'var(--amarillo)','var(--amarillo3)'],['Verde',verdes,'var(--verde)','var(--verde3)']].map(function(x){
+      return '<div style="flex:1;min-width:80px;background:'+x[3]+';border-radius:8px;padding:8px 10px;text-align:center">'+
+        '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
+        '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div>'+
+        '<div style="font-size:9px;color:'+x[2]+'">'+(censo.length?Math.round(x[1]/censo.length*100):0)+'%</div>'+
+        '</div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Cambios en Clasificacion de Triage</span></div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'+
+    [['Amarillo',cambioAm,'var(--amarillo)'],['Rojo',cambioRo,'var(--rojo)'],['Total',cambioAm+cambioRo,'var(--gris6)']].map(function(x){
+      return '<div style="flex:1;min-width:70px;text-align:center">'+
+        '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
+        '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div></div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
+    ic('var(--gris5)','Mortalidad','(defunciones / total) x 100',pctMort+'%',defunciones+' defunciones de '+censo.length+' pacientes',Math.min(pctMort*5,100))+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
-      '<div class="group-title" style="grid-column:1/-1">Codigos Activados</div>'+
-      '<div class="ind-card" style="grid-column:1/-1">'+
-        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">'+
-          [['Oro/Mater',codOro,'var(--morado)'],['Infarto',codInfarto,'var(--rojo)'],['Sepsis',codSepsis,'var(--naranja2)'],['Cerebro',codCerebro,'var(--az2)'],['Total',codOro+codInfarto+codSepsis+codCerebro,'var(--gris6)']].map(function(x){
-            return '<div style="flex:1;min-width:90px;text-align:center">'+
-              '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:3px">'+x[0]+'</div>'+
-              '<div style="font-size:26px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div></div>';
-          }).join('')+
-        '</div>'+
-      '</div>'+
+    '<div class="group-title" style="grid-column:1/-1">Codigos Activados</div>'+
+    '<div class="ind-card" style="grid-column:1/-1">'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">'+
+    [['Oro/Mater',codOro,'var(--morado)'],['Infarto',codInfarto,'var(--rojo)'],['Sepsis',codSepsis,'var(--naranja2)'],['Cerebro',codCerebro,'var(--az2)'],['Total',codOro+codInfarto+codSepsis+codCerebro,'var(--gris6)']].map(function(x){
+      return '<div style="flex:1;min-width:90px;text-align:center">'+
+        '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:3px">'+x[0]+'</div>'+
+        '<div style="font-size:26px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div></div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
     '</div>'+
     '<div class="ind-grid-3" style="margin-bottom:12px">'+
-      '<div class="group-title" style="grid-column:1/-1">Destino de los Pacientes</div>'+
-      '<div class="ind-card" style="grid-column:1/-1">'+
-        '<div style="display:flex;gap:14px;flex-wrap:wrap">'+
-          [['Hospitalizacion',destHosp,'var(--az)'],['Quirofano',destQx,'var(--rojo)'],['Domicilio',destDom,'var(--verde)'],['Alta voluntaria',destAltaVol,'var(--gris5)'],['Referencia',destRef,'var(--morado)'],['Defuncion',defunciones,'var(--gris4)']].map(function(x){
-            return '<div style="flex:1;min-width:100px;text-align:center">'+
-              '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
-              '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div>'+
-              '<div style="font-size:9px;color:'+x[2]+'">'+(censo.length?Math.round(x[1]/censo.length*100):0)+'%</div></div>';
-          }).join('')+
-        '</div>'+
-      '</div>'+
-      ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) x 100',pctHosp+'%',destHosp+' de '+censo.length+' pacientes',pctHosp)+
-      ic('var(--rojo)','% Ingreso a Quirofano','(quirofano / total) x 100',pctQx+'%',destQx+' de '+censo.length+' pacientes',pctQx)+
-      ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
+    '<div class="group-title" style="grid-column:1/-1">Destino de los Pacientes</div>'+
+    '<div class="ind-card" style="grid-column:1/-1">'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap">'+
+    [['Hospitalizacion',destHosp,'var(--az)'],['Quirofano',destQx,'var(--rojo)'],['Domicilio',destDom,'var(--verde)'],['Alta voluntaria',destAltaVol,'var(--gris5)'],['Referencia',destRef,'var(--morado)'],['Defuncion',defunciones,'var(--gris4)']].map(function(x){
+      return '<div style="flex:1;min-width:100px;text-align:center">'+
+        '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
+        '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div>'+
+        '<div style="font-size:9px;color:'+x[2]+'">'+(censo.length?Math.round(x[1]/censo.length*100):0)+'%</div></div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
+    ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) x 100',pctHosp+'%',destHosp+' de '+censo.length+' pacientes',pctHosp)+
+    ic('var(--rojo)','% Ingreso a Quirofano','(quirofano / total) x 100',pctQx+'%',destQx+' de '+censo.length+' pacientes',pctQx)+
+    ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
     '</div>';
 }
 
+// ─── Init ─────────────────────────────────────────────────────────────────────
 actualizarFechas();
 cargarDatos();
 </script>
