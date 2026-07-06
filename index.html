@@ -214,15 +214,13 @@ function dk(d){ if(typeof d==='string') d=new Date(d+'T12:00:00'); return d.getF
 
 function fmt(d){ const days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return days[d.getDay()]+', '+d.getDate()+' de '+m[d.getMonth()]+' de '+d.getFullYear(); }
 
-/* FIX: hora local del dispositivo, no UTC */
+/* ✅ FIX: hora local del dispositivo, no UTC */
 function horaActual(){
   var n=new Date();
   return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
 
-/* FIX: convierte timestamp ISO a hora local (no UTC) — solo se usa como
-   compatibilidad con registros antiguos que el backend haya guardado como
-   fecha/hora real de Sheets antes de este parche. */
+/* ✅ FIX: convierte timestamp ISO a hora local (no UTC) */
 function isoAHoraLocal(isoStr){
   var d=new Date(isoStr);
   return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
@@ -274,7 +272,6 @@ async function apiCall(payload){
     const r=await fetch(GAS_URL+'?'+params.toString());
     const data=await r.json();
     if(data.ok) guardarLocal();
-    else if(data.error) toast('⚠ '+data.error,'error');
     return data;
   }catch(e){ toast('Sin conexion - guardado local','error'); return{ok:false}; }
 }
@@ -289,30 +286,18 @@ async function cargarDatos(){
     const data=await r.json();
     if(data&&typeof data==='object'){
       if(Array.isArray(data.censo)){
-        // ── SALVAGUARDA: si el servidor de pronto responde con una lista
-        // sospechosamente vacía mientras localmente sí había pacientes de
-        // hoy, NO se sobrescribe (evita que "desaparezcan" pacientes por un
-        // error transitorio de red/servidor). Se avisa y se reintenta luego.
-        const hoy=dk(cur);
-        const teniaHoyLocal=DB.censo.some(function(r){ return r.fecha===hoy; });
-        if(data.censo.length===0 && teniaHoyLocal){
-          console.warn('getAll devolvió censo vacío pero había pacientes locales de hoy — se conserva la copia local.');
-          toast('⚠ No se pudo confirmar la sincronización; se conservan tus datos locales','error');
-        } else {
-          DB.censo=data.censo.map(rec=>{
-            ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{
-              if(rec[c]&&String(rec[c]).includes('T')) rec[c]=String(rec[c]).split('T')[0];
-            });
-            // Compatibilidad con registros antiguos guardados como fecha/hora
-            // real de Google Sheets (antes de forzar texto en el backend).
-            ['horaRegistro','horaTriage','horaAtencion','horaEgreso','horaActivacionCodigo'].forEach(c=>{
-              if(rec[c]&&String(rec[c]).includes('T')){
-                rec[c]=isoAHoraLocal(rec[c]);
-              }
-            });
-            return rec;
+        DB.censo=data.censo.map(rec=>{
+          ['fecha','fechaIngreso','fechaEgreso','fechaNac'].forEach(c=>{
+            if(rec[c]&&String(rec[c]).includes('T')) rec[c]=String(rec[c]).split('T')[0];
           });
-        }
+          // ✅ FIX PRINCIPAL: usar getHours/getMinutes (hora LOCAL) en vez de getUTCHours/getUTCMinutes
+          ['horaRegistro','horaTriage','horaAtencion','horaEgreso','horaActivacionCodigo'].forEach(c=>{
+            if(rec[c]&&String(rec[c]).includes('T')){
+              rec[c]=isoAHoraLocal(rec[c]);
+            }
+          });
+          return rec;
+        });
       }
       recalcNid(); guardarLocal();
     }
@@ -401,7 +386,7 @@ function abrirModal(id){
   var evTipos=['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'];
   var evTipoOpts=evTipos.map(function(t){ return '<option value="'+t+'"'+(rec.eventoAdversoTipo===t?' selected':'')+'>'+t+'</option>'; }).join('');
 
-  // FIX: al crear nuevo registro, H.Registro = hora actual; las demás vacías
+  // ✅ FIX: al crear nuevo registro, H.Registro = hora actual; las demás vacías
   // Al editar, se usan exactamente los valores guardados (ya corregidos en cargarDatos)
   var valHReg  = esNuevo ? horaActual()       : (rec.horaRegistro||'');
   var valHTri  = esNuevo ? ''                 : (rec.horaTriage||'');
@@ -511,29 +496,17 @@ async function guardarCenso(id){
   if(id){ var i=DB.censo.findIndex(r=>r.id===id); if(i>-1) DB.censo[i]=d; }
   else DB.censo.push(d);
   showLoader('Guardando...');
-  const resp=await apiCall({action:id?'update':'save',section:'censo',record:d});
-  hideLoader();
-  if(resp&&resp.ok===false){ return; } // no cerrar el modal si falló; el dato ya quedó a salvo en localStorage
-  closeModal('modalCenso'); renderCenso();
+  await apiCall({action:id?'update':'save',section:'censo',record:d});
+  hideLoader(); closeModal('modalCenso'); renderCenso();
   toast('Registro guardado');
 }
 
 async function eliminar(id,seccion){
   if(!confirm('Eliminar este registro?')) return;
-  const respaldo=DB[seccion].slice();
   DB[seccion]=DB[seccion].filter(r=>r.id!==id);
   showLoader('Eliminando...');
-  const resp=await apiCall({action:'delete',section:seccion,id:id});
-  hideLoader();
-  if(resp&&resp.ok===false){
-    // Si el borrado no se confirmó en el servidor, se restaura localmente
-    // para no perder al paciente por un fallo de red/servidor.
-    DB[seccion]=respaldo;
-    guardarLocal();
-    renderCenso();
-    return;
-  }
-  renderCenso(); closeModal('modalCenso');
+  await apiCall({action:'delete',section:seccion,id:id});
+  hideLoader(); renderCenso(); closeModal('modalCenso');
   toast('Registro eliminado','error');
 }
 
