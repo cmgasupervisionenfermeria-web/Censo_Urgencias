@@ -422,7 +422,7 @@ function renderCenso(){
     } else { estCelda='-'; }
     var codigoCelda=r.codigo&&r.codigo!=='Ninguno'?('<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">'+r.codigo+'</span>'):'-';
     var evCelda=r.eventoAdverso==='Si'?('<span style="color:var(--rojo);font-weight:700" title="'+(r.eventoAdversoTipo||'')+'">! '+(r.eventoAdversoTipo||'Si')+'</span>'):'-';
-    return '<tr onclick="requirePin(()=>abrirModal('+r.id+'))" style="'+rowStyle+'">'+
+    return '<tr data-id="'+r.id+'" onclick="toggleExpandCenso(this)" style="'+rowStyle+'cursor:pointer">'+
       '<td style="font-weight:600;color:var(--gris4)">'+(r.num||'-')+'</td>'+
       '<td style="font-size:11px">'+(r.fecha||'-')+'</td>'+
       '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaRegistro||'-')+'</td>'+
@@ -445,9 +445,60 @@ function renderCenso(){
       '<td style="font-size:11px">'+(r.interconsulta||'-')+'</td>'+
       '<td style="font-size:11px">'+(r.referidoPor||'-')+'</td>'+
       '<td style="font-size:11px;font-weight:500">'+(r.destino||'-')+'</td>'+
-      '<td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>eliminar('+r.id+',\'censo\'))" style="color:var(--rojo)">x</button></td>'+
+      '<td style="text-align:center;color:var(--gris4);font-size:14px">›</td>'+
       '</tr>';
   }).join('');
+}
+
+// ─── Vista de detalle al hacer clic (sin desplazarse por toda la fila) ───────
+
+function campoDetalleCenso(label,val,color){
+  return '<div style="display:flex;flex-direction:column;gap:2px">'+
+    '<span style="font-size:9px;font-weight:700;color:var(--gris4);text-transform:uppercase;letter-spacing:.05em">'+label+'</span>'+
+    '<span style="font-size:13px;color:'+(color||'var(--gris7)')+';font-weight:500">'+(val&&String(val).trim()!==''?val:'-')+'</span>'+
+    '</div>';
+}
+
+function toggleExpandCenso(tr){
+  const id=Number(tr.dataset.id);
+  const next=tr.nextElementSibling;
+  if(next&&next.classList.contains('detalle-row')){ next.remove(); return; }
+  document.querySelectorAll('#censo-tbody tr.detalle-row').forEach(function(el){ el.remove(); });
+  const r=DB.censo.find(x=>x.id===id);
+  if(!r) return;
+  const colCount=tr.children.length;
+  const detTr=document.createElement('tr');
+  detTr.className='detalle-row';
+  detTr.innerHTML='<td colspan="'+colCount+'" style="background:var(--gris0);padding:14px 18px;cursor:default" onclick="event.stopPropagation()">'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px">'+
+    campoDetalleCenso('Paciente',r.paciente)+
+    campoDetalleCenso('Expediente',r.expediente)+
+    campoDetalleCenso('Edad / Sexo',(r.edad||'-')+' / '+(r.sexo||'-'))+
+    campoDetalleCenso('Fecha de nacimiento',r.fechaNac)+
+    campoDetalleCenso('Fecha',r.fecha)+
+    campoDetalleCenso('H. Registro',r.horaRegistro)+
+    campoDetalleCenso('H. Triage',r.horaTriage)+
+    campoDetalleCenso('H. Atencion medica',r.horaAtencion)+
+    campoDetalleCenso('H. Egreso',r.horaEgreso)+
+    campoDetalleCenso('Triage',r.triage)+
+    campoDetalleCenso('Cambio de triage',r.cambioTriage)+
+    campoDetalleCenso('Codigo activado',r.codigo&&r.codigo!=='Ninguno'?r.codigo:'-')+
+    campoDetalleCenso('Diagnostico',r.diagnostico)+
+    campoDetalleCenso('Aseguradora',r.aseguradora)+
+    campoDetalleCenso('Primera vez',r.primeraVez)+
+    campoDetalleCenso('Medico de guardia',r.medico)+
+    campoDetalleCenso('Medico interconsulta',r.interconsulta)+
+    campoDetalleCenso('Referido por',r.referidoPor)+
+    campoDetalleCenso('Enfermera responsable',r.enfermeraResponsable,'var(--rojo)')+
+    campoDetalleCenso('Destino',r.destino)+
+    campoDetalleCenso('Evento adverso',r.eventoAdverso==='Si'?(r.eventoAdversoTipo||'Si'):'No')+
+    '</div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--gris2)">'+
+    '<button class="btn btn-ghost btn-sm" onclick="requirePin(()=>abrirModal('+id+'))">Editar</button>'+
+    '<button class="btn btn-danger btn-sm" onclick="requirePin(()=>eliminar('+id+',\'censo\'))">Eliminar</button>'+
+    '</div>'+
+    '</td>';
+  tr.after(detTr);
 }
 
 // ─── Modal de registro ────────────────────────────────────────────────────────
@@ -510,6 +561,7 @@ function abrirModal(id){
     '<div class="form-group"><label>Medico de guardia</label><input id="c-med" value="'+(rec.medico||'')+'"></div>'+
     '<div class="form-group"><label>Medico interconsulta</label><input id="c-inter" value="'+(rec.interconsulta||'')+'"></div>'+
     '<div class="form-group"><label>Referido por medico</label><input id="c-ref" value="'+(rec.referidoPor||'')+'"></div>'+
+    '<div class="form-group"><label>Enfermera responsable</label><input id="c-enf" value="'+(rec.enfermeraResponsable||'')+'"></div>'+
     '<div class="form-group"><label>Destino del paciente</label><select id="c-dest">'+destsOpts+'</select></div>'+
     '<div class="form-group"><label>Evento adverso</label>'+
     '<select id="c-ev" onchange="toggleEvAdverso()"><option value="">-</option><option'+(rec.eventoAdverso==='No'?' selected':'')+'>No</option><option'+(rec.eventoAdverso==='Si'?' selected':'')+'>Si</option></select></div>'+
@@ -564,6 +616,7 @@ async function guardarCenso(id){
     medico:document.getElementById('c-med').value.trim(),
     interconsulta:document.getElementById('c-inter').value.trim(),
     referidoPor:document.getElementById('c-ref').value.trim(),
+    enfermeraResponsable:document.getElementById('c-enf').value.trim(),
     destino:document.getElementById('c-dest').value,
     eventoAdverso:document.getElementById('c-ev').value,
     eventoAdversoTipo:(document.getElementById('c-ev-tipo')||{value:''}).value||''
