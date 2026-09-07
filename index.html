@@ -116,6 +116,7 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
 <div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
 <div class="nav-tabs">
 <button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
+<button class="nav-tab" onclick="showPage('endo',this)">🔬 Endoscopia</button>
 <button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
 </div>
 <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
@@ -172,6 +173,45 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 </div>
 </div>
 
+<div class="page" id="page-endo">
+<div class="top-bar">
+<div class="date-nav">
+<button onclick="cambiarDia(-1)">&#8249;</button>
+<span class="date-lbl" id="dateLabelEndo"></span>
+<button onclick="cambiarDia(1)">&#8250;</button>
+</div>
+<button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModalProcedimiento(null))">+ Agregar procedimiento</button>
+<select id="csv-mes-endo" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+<option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+<option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+<option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+<option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+</select>
+<select id="csv-anio-endo" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
+<option>2026</option><option>2027</option>
+</select>
+<button class="btn btn-ghost btn-sm" onclick="exportarCSVEndo()">&#8595; CSV mensual</button>
+</div>
+<div class="card">
+<div class="card-header">
+<span class="card-title">🔬 Procedimientos del dia</span>
+<span id="endo-count" style="font-size:12px;color:var(--gris4)"></span>
+</div>
+<div class="table-wrap">
+<table>
+<thead><tr>
+<th>Sala</th><th>Fecha</th><th>Hora</th><th>Nombre</th><th>Exp.</th><th>Sexo</th><th>Edad</th>
+<th>Procedimiento</th><th>Especialidad</th><th>Cirujano</th><th>Anestesiologo</th><th>T. Qx (min)</th>
+<th>Tipo</th><th>Estado</th><th>Aseguradora</th><th></th>
+</tr></thead>
+<tbody id="endo-tbody"></tbody>
+</table>
+<div class="empty" id="endo-empty"><div class="empty-icon">🔬</div><p>Sin procedimientos registrados hoy</p></div>
+<button class="add-row-btn" onclick="requirePin(()=>abrirModalProcedimiento(null))">+ Agregar procedimiento</button>
+</div>
+</div>
+</div>
+
 <div class="page" id="page-concentrado">
 <div class="top-bar" style="justify-content:space-between">
 <div style="font-size:16px;font-weight:600;color:var(--gris7)">Concentrado Mensual</div>
@@ -194,6 +234,10 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 <div class="modal"><div class="modal-handle"></div><div id="modalCensoContent"></div></div>
 </div>
 
+<div class="modal-bg" id="modalProc" onclick="if(event.target===this)closeModal('modalProc')">
+<div class="modal"><div class="modal-handle"></div><div id="modalProcContent"></div></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -202,11 +246,16 @@ const PIN = 'URG1';
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DESTINOS = ['Hospitalizacion','Quirofano','Domicilio','Alta voluntaria','Defuncion','Referencia','Observacion','Pendiente'];
 const CODIGOS = ['Ninguno','Oro / Mater','Infarto','Sepsis','Cerebro'];
+// Lista única de especialidades — la misma que usa Hospitalización en Censo
+// Hospitalario, para que un procedimiento de Endoscopia/Urgencias siempre
+// se capture con una especialidad de esta lista (evita variaciones de
+// escritura y mantiene consistentes las estadísticas del Concentrado).
+const ESPECIALIDADES = ['Cirugía general','Traumatología y ortopedia','Cirugía pediátrica','Cirugía oncológica','Cirugía de otorrinolaringología','Cirugía de urología','Cirugía maxilofacial','Cirugía plástica','Cirugía oncoginecológica','Angiología','Coloproctología','Cirugía cardiotorácica','Neurocirugía','Medicina interna','Radiología intervencionista','Nefrología','Cardiología','Gastroenterología','Neumología','Geriatría','Oncología','Neurología','Medicina familiar','Hemato-oncología','Pediatría','Oncopediatría','Ginecología','Obstetricia'];
 const GAS_OK = GAS_URL.indexOf('TU_URL') === -1;
 
 let cur = new Date(); cur.setHours(0,0,0,0);
 let pinOK = false, pinCB = null, nid = 1;
-let DB = { censo:[] };
+let DB = { censo:[], endo:[] };
 
 // ─── Utilidades de fecha/hora ────────────────────────────────────────────────
 
@@ -252,15 +301,15 @@ function toggleLock(){ if(pinOK){ pinOK=false; document.getElementById('modeLabe
 
 // ─── Navegación ───────────────────────────────────────────────────────────────
 
-function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); actualizarFechas(); if(id==='censo') renderCenso(); if(id==='concentrado') renderConcentrado(); }
-function cambiarDia(d){ cur.setDate(cur.getDate()+d); actualizarFechas(); renderCenso(); }
-function actualizarFechas(){ document.getElementById('dateLabel').textContent=fmt(cur); }
+function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); actualizarFechas(); if(id==='censo') renderCenso(); if(id==='endo') renderEndo(); if(id==='concentrado') renderConcentrado(); }
+function cambiarDia(d){ cur.setDate(cur.getDate()+d); actualizarFechas(); renderCenso(); renderEndo(); }
+function actualizarFechas(){ document.getElementById('dateLabel').textContent=fmt(cur); const dle=document.getElementById('dateLabelEndo'); if(dle) dle.textContent=fmt(cur); }
 
 // ─── Persistencia ─────────────────────────────────────────────────────────────
 
 function guardarLocal(){ try{ localStorage.setItem('urg_v3',JSON.stringify({db:DB,nid:nid})); }catch(e){} }
-function cargarLocal(){ try{ const r=localStorage.getItem('urg_v3'); if(!r) return false; const p=JSON.parse(r); if(p.db&&Array.isArray(p.db.censo)) DB.censo=p.db.censo; if(p.nid) nid=p.nid; return true; }catch(e){ return false; } }
-function recalcNid(){ const ids=DB.censo.map(x=>Number(x.id)||0); nid=ids.length?Math.max(...ids)+1:1; }
+function cargarLocal(){ try{ const r=localStorage.getItem('urg_v3'); if(!r) return false; const p=JSON.parse(r); if(p.db&&Array.isArray(p.db.censo)) DB.censo=p.db.censo; if(p.db&&Array.isArray(p.db.endo)) DB.endo=p.db.endo; if(p.nid) nid=p.nid; return true; }catch(e){ return false; } }
+function recalcNid(){ const ids=DB.censo.map(x=>Number(x.id)||0).concat(DB.endo.map(x=>Number(x.id)||0)); nid=ids.length?Math.max(...ids)+1:1; }
 
 async function apiCall(payload){
   guardarLocal();
@@ -281,8 +330,8 @@ async function apiCall(payload){
 
 async function cargarDatos(){
   const hayLocal=cargarLocal();
-  if(hayLocal){ recalcNid(); actualizarFechas(); renderCenso(); }
-  if(!GAS_OK){ if(!hayLocal){actualizarFechas();renderCenso();} return; }
+  if(hayLocal){ recalcNid(); actualizarFechas(); renderCenso(); renderEndo(); }
+  if(!GAS_OK){ if(!hayLocal){actualizarFechas();renderCenso();renderEndo();} return; }
   showLoader('Sincronizando...');
   try{
     const r=await fetch(GAS_URL+'?action=getAll');
@@ -314,10 +363,21 @@ async function cargarDatos(){
           });
         }
       }
+      if(Array.isArray(data.endo)){
+        DB.endo=data.endo.map(rec=>{
+          ['fecha','fechaIngreso','fechaNac'].forEach(c=>{
+            if(rec[c]&&String(rec[c]).includes('T')) rec[c]=String(rec[c]).split('T')[0];
+          });
+          if(rec.horaIngreso&&String(rec.horaIngreso).includes('T')){
+            rec.horaIngreso=isoAHoraLocal(rec.horaIngreso);
+          }
+          return rec;
+        });
+      }
       recalcNid(); guardarLocal();
     }
   }catch(e){ console.error(e); }
-  hideLoader(); actualizarFechas(); renderCenso();
+  hideLoader(); actualizarFechas(); renderCenso(); renderEndo();
 }
 
 // ─── Render tabla censo ───────────────────────────────────────────────────────
@@ -525,15 +585,16 @@ async function eliminar(id,seccion){
   showLoader('Eliminando...');
   const resp=await apiCall({action:'delete',section:seccion,id:id});
   hideLoader();
+  const rerender=function(){ if(seccion==='endo') renderEndo(); else renderCenso(); };
   if(resp&&resp.ok===false){
     // Si el borrado no se confirmó en el servidor, se restaura localmente
     // para no perder al paciente por un fallo de red/servidor.
     DB[seccion]=respaldo;
     guardarLocal();
-    renderCenso();
+    rerender();
     return;
   }
-  renderCenso(); closeModal('modalCenso');
+  rerender(); closeModal(seccion==='endo'?'modalProc':'modalCenso');
   toast('Registro eliminado','error');
 }
 
@@ -547,6 +608,143 @@ function exportarCSV(){
   a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download='urgencias_'+hoy+'.csv';
   a.click(); toast('CSV exportado');
+}
+
+// ─── Endoscopia / Procedimientos ────────────────────────────────────────────────
+
+function filtrarDiaEndo(){ const hoy=dk(cur); return DB.endo.filter(r=>r.fecha===hoy); }
+
+function renderEndo(){
+  const data=filtrarDiaEndo();
+  const tbody=document.getElementById('endo-tbody');
+  const empty=document.getElementById('endo-empty');
+  if(!tbody) return; // la página aún no está en el DOM (no debería pasar, pero por seguridad)
+  document.getElementById('endo-count').textContent=data.length+' procedimiento'+(data.length!==1?'s':'');
+  if(!data.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=data.map(function(r){
+    var estadoCelda;
+    if(r.estado==='Cancelado') estadoCelda='<span style="background:var(--rojo3);color:var(--rojo);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✕ Cancelado</span>';
+    else if(r.estado==='Pendiente') estadoCelda='<span style="background:var(--amarillo3);color:var(--amarillo);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">⏳ Pendiente</span>';
+    else estadoCelda='<span style="background:var(--verde3);color:var(--verde);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Realizado</span>';
+    return '<tr onclick="requirePin(()=>abrirModalProcedimiento('+r.id+'))">'+
+      '<td><b>'+(r.sala||'-')+'</b></td>'+
+      '<td style="font-size:11px">'+(r.fechaIngreso||'-')+'</td>'+
+      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaIngreso||'-')+'</td>'+
+      '<td style="font-weight:500;max-width:130px">'+(r.nombre||'-')+'</td>'+
+      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.expediente||'-')+'</td>'+
+      '<td style="text-align:center">'+(r.sexo||'-')+'</td>'+
+      '<td style="text-align:center">'+(r.edad||'-')+'</td>'+
+      '<td style="max-width:150px;font-size:11px;color:var(--gris5)">'+(r.procedimiento||'-')+'</td>'+
+      '<td style="font-size:11px">'+(r.especialidad||'-')+'</td>'+
+      '<td style="font-size:11px">'+(r.cirujano||'-')+'</td>'+
+      '<td style="font-size:11px">'+(r.anestesiologo||'-')+'</td>'+
+      '<td style="text-align:center">'+(r.tiempoQx||'-')+'</td>'+
+      '<td style="font-size:11px">'+(r.tipo||'-')+'</td>'+
+      '<td>'+estadoCelda+'</td>'+
+      '<td style="font-size:11px">'+(r.aseguradora||'-')+'</td>'+
+      '<td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();requirePin(()=>abrirModalProcedimiento('+r.id+'))">✏</button></td>'+
+      '</tr>';
+  }).join('');
+}
+
+function abrirModalProcedimiento(id){
+  var rec=id?DB.endo.find(r=>r.id===id)||{}:{};
+  var espOpts=['<option value="">-</option>'].concat(ESPECIALIDADES.map(function(e){ return '<option'+(rec.especialidad===e?' selected':'')+'>'+e+'</option>'; })).join('');
+  document.getElementById('modalProcContent').innerHTML=
+    '<div class="modal-title">'+(id?'Editar':'Nuevo')+' procedimiento - Endoscopia/Urgencias'+
+    '<button class="modal-close" onclick="closeModal(\'modalProc\')">✕</button></div>'+
+    '<div class="form-grid-3">'+
+    '<div class="form-group"><label>Sala</label><select id="e-sala"><option value="">-</option>'+
+    ['Endoscopia','Urgencias'].map(function(s){ return '<option'+(rec.sala===s?' selected':'')+'>'+s+'</option>'; }).join('')+
+    '</select></div>'+
+    '<div class="form-group"><label>Fecha</label><input type="date" id="e-fecha" value="'+(rec.fechaIngreso||dk(cur))+'"></div>'+
+    '<div class="form-group"><label>Hora</label><input type="time" id="e-hora" value="'+(rec.horaIngreso||'')+'"></div>'+
+    '<div class="form-group full"><label>Nombre del paciente</label><input id="e-nombre" value="'+(rec.nombre||'')+'" placeholder="Apellidos, Nombre"></div>'+
+    '<div class="form-group"><label>N Expediente</label><input id="e-exp" value="'+(rec.expediente||'')+'"></div>'+
+    '<div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="e-fnac" value="'+(rec.fechaNac||'')+'" onchange="document.getElementById(\'e-edad\').value=calcEdadLocal(this.value)"></div>'+
+    '<div class="form-group"><label>Sexo</label><select id="e-sexo"><option value="">-</option><option value="M"'+(rec.sexo==='M'?' selected':'')+'>Masculino</option><option value="F"'+(rec.sexo==='F'?' selected':'')+'>Femenino</option></select></div>'+
+    '<div class="form-group"><label>Edad</label><input type="number" id="e-edad" value="'+(rec.edad||'')+'" min="0" placeholder="Calculada auto."></div>'+
+    '<div class="form-group full"><label>Procedimiento quirurgico</label><input id="e-proc" value="'+(rec.procedimiento||'')+'"></div>'+
+    '<div class="form-group"><label>Especialidad</label><select id="e-esp">'+espOpts+'</select></div>'+
+    '<div class="form-group"><label>Cirujano</label><input id="e-cir" value="'+(rec.cirujano||'')+'"></div>'+
+    '<div class="form-group"><label>Anestesiologo</label><input id="e-anest" value="'+(rec.anestesiologo||'')+'"></div>'+
+    '<div class="form-group"><label>Tiempo quirurgico (min)</label><input type="number" id="e-tqx" value="'+(rec.tiempoQx||'')+'" min="0"></div>'+
+    '<div class="form-group"><label>Tipo</label><select id="e-tipo"><option value="">-</option>'+
+    ['Programado','Urgente'].map(function(t){ return '<option'+(rec.tipo===t?' selected':'')+'>'+t+'</option>'; }).join('')+
+    '</select></div>'+
+    '<div class="form-group"><label>Estado del procedimiento</label><select id="e-estado">'+
+    '<option value="Pendiente"'+(rec.estado==='Pendiente'||(!id&&!rec.estado)?' selected':'')+'>⏳ Pendiente</option>'+
+    '<option value="Realizado"'+(rec.estado==='Realizado'||(id&&!rec.estado)?' selected':'')+'>✓ Realizado</option>'+
+    '<option value="Cancelado"'+(rec.estado==='Cancelado'?' selected':'')+'>✕ Cancelado</option>'+
+    '</select></div>'+
+    '<div class="form-group"><label>Aseguradora</label><input id="e-aseg" value="'+(rec.aseguradora||'')+'"></div>'+
+    '</div>'+
+    '<div class="form-actions">'+
+    (id?'<button class="btn btn-danger btn-sm" onclick="eliminar('+id+',\'endo\')">Eliminar</button>':'')+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalProc\')">Cancelar</button>'+
+    '<button class="btn btn-success" onclick="guardarProcedimiento('+(id||0)+')">Guardar</button>'+
+    '</div>';
+  document.getElementById('modalProc').classList.add('open');
+}
+
+async function guardarProcedimiento(id){
+  var fecha=document.getElementById('e-fecha').value;
+  var d={
+    id:id||nid++,
+    fecha:dk(cur),
+    sala:document.getElementById('e-sala').value,
+    fechaIngreso:fecha,
+    horaIngreso:document.getElementById('e-hora').value,
+    nombre:document.getElementById('e-nombre').value.trim(),
+    expediente:document.getElementById('e-exp').value.trim().toUpperCase(),
+    fechaNac:document.getElementById('e-fnac').value,
+    sexo:document.getElementById('e-sexo').value,
+    edad:document.getElementById('e-edad').value,
+    procedimiento:document.getElementById('e-proc').value.trim(),
+    especialidad:document.getElementById('e-esp').value.trim(),
+    cirujano:document.getElementById('e-cir').value.trim(),
+    anestesiologo:document.getElementById('e-anest').value.trim(),
+    tiempoQx:document.getElementById('e-tqx').value,
+    tipo:document.getElementById('e-tipo').value,
+    estado:document.getElementById('e-estado').value,
+    aseguradora:document.getElementById('e-aseg').value.trim()
+  };
+  if(id){ if(!fecha) d.fecha=(DB.endo.find(r=>r.id===id)||{}).fecha||dk(cur); const i=DB.endo.findIndex(r=>r.id===id); if(i>-1) DB.endo[i]=d; }
+  else DB.endo.push(d);
+  showLoader('Guardando...');
+  const resp=await apiCall({action:id?'update':'save',section:'endo',record:d});
+  hideLoader();
+  if(resp&&resp.ok===false){ return; }
+  closeModal('modalProc'); renderEndo();
+  toast('Procedimiento guardado');
+}
+
+function initCsvSelectsEndo(){
+  const hoy=new Date();
+  const mesSel=document.getElementById('csv-mes-endo');
+  const anioSel=document.getElementById('csv-anio-endo');
+  if(mesSel) mesSel.value=String(hoy.getMonth());
+  if(anioSel && [...anioSel.options].some(o=>o.value===String(hoy.getFullYear()))) anioSel.value=String(hoy.getFullYear());
+}
+
+function exportarCSVEndo(){
+  const mesSel=document.getElementById('csv-mes-endo');
+  const anioSel=document.getElementById('csv-anio-endo');
+  const mes=mesSel?parseInt(mesSel.value):new Date().getMonth();
+  const anio=anioSel?parseInt(anioSel.value):new Date().getFullYear();
+  const inicioMes=anio+'-'+String(mes+1).padStart(2,'0')+'-01';
+  const diasMes=new Date(anio,mes+1,0).getDate();
+  const finMes=anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(diasMes).padStart(2,'0');
+  const data=DB.endo.filter(function(r){ const f=r.fechaIngreso||r.fecha||''; return f>=inicioMes&&f<=finMes; });
+  if(!data.length){ toast('Sin datos para exportar en '+MESES[mes]+' '+anio,'error'); return; }
+  const keys=Object.keys(data[0]);
+  const csv=[keys.join(',')].concat(data.map(r=>keys.map(k=>'"'+String(r[k]||'').replace(/"/g,'""')+'"').join(','))).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='endoscopia_urgencias_'+anio+'-'+String(mes+1).padStart(2,'0')+'.csv';
+  a.click();
+  toast('CSV de '+MESES[mes]+' '+anio+' exportado');
 }
 
 // ─── Concentrado mensual ──────────────────────────────────────────────────────
@@ -596,6 +794,26 @@ function renderConcentrado(){
       return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')>d0&&(new Date(o.fecha+'T12:00')-d0)<=72*3600000;
     });
   }).length;
+
+  // ── Endoscopia / Procedimientos del mes ──
+  var endoMes=DB.endo.filter(function(r){ var f=r.fechaIngreso||r.fecha||''; return f>=(anio+'-'+String(mes+1).padStart(2,'0')+'-01')&&f<=(anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(new Date(anio,mes+1,0).getDate()).padStart(2,'0')); });
+  var endoSala={}, endoEsp={};
+  endoMes.forEach(function(r){
+    var s=r.sala||'Sin especificar'; endoSala[s]=(endoSala[s]||0)+1;
+    var e=r.especialidad||'Sin especialidad'; endoEsp[e]=(endoEsp[e]||0)+1;
+  });
+  var endoProgramados=endoMes.filter(function(r){ return r.tipo==='Programado'; }).length;
+  var endoUrgentes=endoMes.filter(function(r){ return r.tipo==='Urgente'; }).length;
+  var endoTqxVals=endoMes.map(function(r){ return parseFloat(r.tiempoQx); }).filter(function(n){ return !isNaN(n)&&n>0; });
+  var endoTqxProm=endoTqxVals.length?Math.round(endoTqxVals.reduce(function(s,n){ return s+n; },0)/endoTqxVals.length):null;
+  var endoCancelados=endoMes.filter(function(r){ return r.estado==='Cancelado'; }).length;
+  var endoPendientes=endoMes.filter(function(r){ return r.estado==='Pendiente'; }).length;
+  var endoRealizados=endoMes.filter(function(r){ return r.estado==='Realizado'||!r.estado; }).length;
+  var endoPctCancelados=endoMes.length>0?Math.round(endoCancelados/endoMes.length*1000)/10:0;
+  var endoEspRows=Object.keys(endoEsp).sort(function(a,b){ return endoEsp[b]-endoEsp[a]; }).map(function(e){
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+e+'</span><b>'+endoEsp[e]+'</b></div>';
+  }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin procedimientos este mes</div>';
+
   function ic(color,titulo,formula,valor,desc,barPct){
     return '<div class="ind-card">'+
       '<div class="ind-hdr"><div class="ind-dot" style="background:'+color+'"></div><span class="ind-ttl">'+titulo+'</span></div>'+
@@ -675,11 +893,30 @@ function renderConcentrado(){
     ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) x 100',pctHosp+'%',destHosp+' de '+censo.length+' pacientes',pctHosp)+
     ic('var(--rojo)','% Ingreso a Quirofano','(quirofano / total) x 100',pctQx+'%',destQx+' de '+censo.length+' pacientes',pctQx)+
     ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
+    '</div>'+
+    '<div class="ind-grid-2" style="margin-bottom:12px">'+
+    '<div class="group-title" style="grid-column:1/-1">🔬 Endoscopia / Urgencias — '+MESES[mes]+' '+anio+'</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--az)"></div><span class="ind-ttl">Procedimientos del mes</span></div>'+
+    '<div class="ind-val" style="color:var(--az)">'+endoMes.length+'</div>'+
+    '<div class="ind-desc">Endoscopia: '+(endoSala['Endoscopia']||0)+' &middot; Urgencias: '+(endoSala['Urgencias']||0)+'<br>Programados: '+endoProgramados+' &middot; Urgentes: '+endoUrgentes+'</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">'+
+    '<div style="flex:1;min-width:70px;text-align:center"><div style="font-size:9px;color:var(--verde);font-weight:700">✓ Realizados</div><div style="font-size:20px;font-weight:700;color:var(--verde)">'+endoRealizados+'</div></div>'+
+    '<div style="flex:1;min-width:70px;text-align:center"><div style="font-size:9px;color:var(--rojo);font-weight:700">✕ Cancelados</div><div style="font-size:20px;font-weight:700;color:var(--rojo)">'+endoCancelados+'</div></div>'+
+    '<div style="flex:1;min-width:70px;text-align:center"><div style="font-size:9px;color:var(--amarillo);font-weight:700">⏳ Pendientes</div><div style="font-size:20px;font-weight:700;color:var(--amarillo)">'+endoPendientes+'</div></div>'+
+    '</div>'+
+    '<div class="ind-desc" style="margin-top:8px">Tasa de cancelacion: <b>'+endoPctCancelados+'%</b> &middot; Tiempo quirurgico promedio: <b>'+(endoTqxProm!==null?endoTqxProm+' min':'-')+'</b></div>'+
+    '</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Procedimientos por especialidad</span></div>'+
+    endoEspRows+
+    '</div>'+
     '</div>';
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 actualizarFechas();
+initCsvSelectsEndo();
 cargarDatos();
 </script>
 </body>
