@@ -116,7 +116,7 @@ tbody td{padding:8px 10px;color:var(--gris6);vertical-align:middle}
 <div class="logo"><div class="logo-icon">🚨</div>Urgencias</div>
 <div class="nav-tabs">
 <button class="nav-tab active" onclick="showPage('censo',this)">📋 Censo</button>
-<button class="nav-tab" onclick="showPage('endo',this)">🔬 Endoscopia</button>
+<button class="nav-tab" onclick="showPage('endo',this)">🔬 Endoscopia/Procedimientos</button>
 <button class="nav-tab" onclick="showPage('concentrado',this)">📊 Concentrado</button>
 </div>
 <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0">
@@ -652,7 +652,7 @@ function abrirModalProcedimiento(id){
   var rec=id?DB.endo.find(r=>r.id===id)||{}:{};
   var espOpts=['<option value="">-</option>'].concat(ESPECIALIDADES.map(function(e){ return '<option'+(rec.especialidad===e?' selected':'')+'>'+e+'</option>'; })).join('');
   document.getElementById('modalProcContent').innerHTML=
-    '<div class="modal-title">'+(id?'Editar':'Nuevo')+' procedimiento - Endoscopia/Urgencias'+
+    '<div class="modal-title">'+(id?'Editar':'Nuevo')+' procedimiento - Endoscopia/Procedimientos'+
     '<button class="modal-close" onclick="closeModal(\'modalProc\')">✕</button></div>'+
     '<div class="form-grid-3">'+
     '<div class="form-group"><label>Sala</label><select id="e-sala"><option value="">-</option>'+
@@ -895,7 +895,7 @@ function renderConcentrado(){
     ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
-    '<div class="group-title" style="grid-column:1/-1">🔬 Endoscopia / Urgencias — '+MESES[mes]+' '+anio+'</div>'+
+    '<div class="group-title" style="grid-column:1/-1">🔬 Endoscopia/Procedimientos — '+MESES[mes]+' '+anio+'</div>'+
     '<div class="ind-card">'+
     '<div class="ind-hdr"><div class="ind-dot" style="background:var(--az)"></div><span class="ind-ttl">Procedimientos del mes</span></div>'+
     '<div class="ind-val" style="color:var(--az)">'+endoMes.length+'</div>'+
