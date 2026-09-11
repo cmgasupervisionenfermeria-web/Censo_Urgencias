@@ -150,7 +150,7 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 <button class="btn btn-primary btn-sm" onclick="requirePin(()=>abrirModal(null))">+ Registrar paciente</button>
 <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">&#8595; CSV</button>
 </div>
-<div id="statsDay" class="stats-grid" style="grid-template-columns:repeat(6,1fr)"></div>
+<div id="statsDay" class="stats-grid" style="grid-template-columns:repeat(7,1fr)"></div>
 <div class="card">
 <div class="card-header">
 <span class="card-title">🚨 Pacientes del dia</span>
@@ -159,11 +159,8 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 <div class="table-wrap">
 <table>
 <thead><tr>
-<th>#</th><th>Fecha</th><th>H. Registro</th><th>H. Triage</th><th>H. Atencion</th><th>H. Egreso</th>
-<th>Triage</th><th>Cambio Triage</th><th>Paciente</th><th>Exp.</th><th>Edad</th><th>Sexo</th>
-<th>Diagnostico</th><th>Codigo</th><th>Aseguradora</th><th>1a vez</th>
-<th>Estancia (h)</th><th>Ev. Adverso</th><th>Medico</th><th>Interconsulta</th>
-<th>Referido por</th><th>Destino</th><th></th>
+<th>#</th><th>Triage</th><th>Paciente</th><th>Exp.</th><th>Diagnostico</th>
+<th>Estancia</th><th>Destino</th><th>Alertas</th><th></th>
 </tr></thead>
 <tbody id="censo-tbody"></tbody>
 </table>
@@ -380,6 +377,28 @@ async function cargarDatos(){
   hideLoader(); actualizarFechas(); renderCenso(); renderEndo();
 }
 
+// ─── Alerta de campos sin capturar (horas clave) ─────────────────────────────
+// Solo marca como "falta" una hora cuando, por el avance del paciente, ya
+// deberia estar capturada - asi no se marca "Hora de egreso" en un paciente
+// que sigue activo en urgencias, por ejemplo.
+
+function camposFaltantes(r){
+  const faltan=[];
+  if(!r.horaRegistro) faltan.push('Hora de registro');
+  if(r.triage && !r.horaTriage) faltan.push('Hora de triage');
+  if(r.medico && !r.horaAtencion) faltan.push('Hora de atencion medica');
+  // Hora de egreso solo se marca si el paciente ya lleva mas de 6 horas sin
+  // que se haya registrado su salida - asi no se marca a alguien que sigue
+  // activo y apenas llego a urgencias.
+  if(!r.horaEgreso && r.horaRegistro){
+    const p=r.horaRegistro.split(':').map(Number);
+    const ahora=new Date();
+    const diff=(ahora.getHours()*60+ahora.getMinutes())-(p[0]*60+p[1]);
+    if(diff>360) faltan.push('Hora de egreso');
+  }
+  return faltan;
+}
+
 // ─── Render tabla censo ───────────────────────────────────────────────────────
 
 function renderCenso(){
@@ -393,13 +412,15 @@ function renderCenso(){
   const verdes=data.filter(r=>r.triage==='Verde').length;
   const hosps=data.filter(r=>r.destino==='Hospitalizacion').length;
   const masde6h=data.filter(r=>{ const m=minEntre(r.horaRegistro,r.horaEgreso); return m!==null&&m>360; }).length;
+  const incompletos=data.filter(r=>camposFaltantes(r).length>0).length;
   document.getElementById('statsDay').innerHTML=
     '<div class="stat-card"><div class="stat-lbl">Total del dia</div><div class="stat-val" style="color:var(--rojo)">'+data.length+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">🔴 Rojo</div><div class="stat-val" style="color:var(--rojo)">'+rojos+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">🟡 Amarillo</div><div class="stat-val" style="color:var(--amarillo)">'+amarillos+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">🟢 Verde</div><div class="stat-val" style="color:var(--verde)">'+verdes+'</div></div>'+
     '<div class="stat-card"><div class="stat-lbl">Hospitalizados</div><div class="stat-val" style="color:var(--az)">'+hosps+'</div></div>'+
-    '<div class="stat-card"><div class="stat-lbl">+6 horas</div><div class="stat-val" style="color:'+(masde6h>0?'var(--rojo)':'var(--gris4)')+'">'+masde6h+'</div></div>';
+    '<div class="stat-card"><div class="stat-lbl">+6 horas</div><div class="stat-val" style="color:'+(masde6h>0?'var(--rojo)':'var(--gris4)')+'">'+masde6h+'</div></div>'+
+    '<div class="stat-card"><div class="stat-lbl">⏱ Datos incompletos</div><div class="stat-val" style="color:'+(incompletos>0?'var(--naranja2)':'var(--gris4)')+'">'+incompletos+'</div></div>';
   if(!data.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
   tbody.innerHTML=data.map(function(r){
@@ -420,31 +441,21 @@ function renderCenso(){
       var ea=Math.round(estMinActual/60*10)/10;
       estCelda='<span style="font-weight:600;color:'+(estMinActual>360?'var(--rojo)':'var(--gris6)')+'">~'+ea+' h'+(estMinActual>360?' !':'')+'</span>';
     } else { estCelda='-'; }
-    var codigoCelda=r.codigo&&r.codigo!=='Ninguno'?('<span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">'+r.codigo+'</span>'):'-';
-    var evCelda=r.eventoAdverso==='Si'?('<span style="color:var(--rojo);font-weight:700" title="'+(r.eventoAdversoTipo||'')+'">! '+(r.eventoAdversoTipo||'Si')+'</span>'):'-';
+    var codigoBadge=r.codigo&&r.codigo!=='Ninguno'?('<br><span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;white-space:nowrap">'+r.codigo+'</span>'):'';
+    var faltanCols=camposFaltantes(r);
+    var alertaIcons='';
+    if(r.eventoAdverso==='Si') alertaIcons+='<span style="color:var(--rojo);font-weight:700;font-size:15px" title="'+(r.eventoAdversoTipo||'Evento adverso')+'">!</span>';
+    if(faltanCols.length) alertaIcons+=(alertaIcons?' ':'')+'<span style="color:var(--naranja2);font-weight:700;font-size:14px" title="Falta capturar: '+faltanCols.join(', ')+'">⏱</span>';
+    var evCelda=alertaIcons||'-';
     return '<tr data-id="'+r.id+'" onclick="toggleExpandCenso(this)" style="'+rowStyle+'cursor:pointer">'+
       '<td style="font-weight:600;color:var(--gris4)">'+(r.num||'-')+'</td>'+
-      '<td style="font-size:11px">'+(r.fecha||'-')+'</td>'+
-      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaRegistro||'-')+'</td>'+
-      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaTriage||'-')+'</td>'+
-      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaAtencion||'-')+'</td>'+
-      '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaEgreso||'-')+'</td>'+
-      '<td>'+triageChip(r.triage)+'</td>'+
-      '<td>'+(r.cambioTriage?('<span style="font-size:11px;color:var(--naranja)">'+r.cambioTriage+'</span>'):'-')+'</td>'+
-      '<td style="font-weight:500;max-width:130px">'+(r.paciente||'-')+'</td>'+
+      '<td>'+triageChip(r.triage)+codigoBadge+'</td>'+
+      '<td style="font-weight:600;max-width:150px">'+(r.paciente||'-')+'<br><span style="font-size:10px;font-weight:400;color:var(--gris4)">'+(r.sexo||'-')+' · '+(r.edad||'-')+'a</span></td>'+
       '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.expediente||'-')+'</td>'+
-      '<td style="text-align:center">'+(r.edad||'-')+'</td>'+
-      '<td style="text-align:center">'+(r.sexo||'-')+'</td>'+
-      '<td style="max-width:140px;font-size:11px;color:var(--gris5)">'+(r.diagnostico||'-')+'</td>'+
-      '<td style="font-size:11px">'+codigoCelda+'</td>'+
-      '<td style="font-size:11px">'+(r.aseguradora||'-')+'</td>'+
-      '<td style="text-align:center">'+(r.primeraVez==='Si'?'✓':'-')+'</td>'+
+      '<td style="max-width:180px;font-size:12px;color:var(--gris5)">'+(r.diagnostico||'-')+'</td>'+
       '<td style="text-align:center">'+estCelda+'</td>'+
+      '<td style="font-size:12px;font-weight:500">'+(r.destino||'-')+'</td>'+
       '<td style="text-align:center">'+evCelda+'</td>'+
-      '<td style="font-size:11px">'+(r.medico||'-')+'</td>'+
-      '<td style="font-size:11px">'+(r.interconsulta||'-')+'</td>'+
-      '<td style="font-size:11px">'+(r.referidoPor||'-')+'</td>'+
-      '<td style="font-size:11px;font-weight:500">'+(r.destino||'-')+'</td>'+
       '<td style="text-align:center;color:var(--gris4);font-size:14px">›</td>'+
       '</tr>';
   }).join('');
@@ -452,10 +463,13 @@ function renderCenso(){
 
 // ─── Vista de detalle al hacer clic (sin desplazarse por toda la fila) ───────
 
-function campoDetalleCenso(label,val,color){
+function campoDetalleCenso(label,val,color,alerta){
+  const vacio=!val||String(val).trim()==='';
+  const texto=vacio?(alerta?'⚠ Sin capturar':'-'):val;
+  const colorFinal=(vacio&&alerta)?'var(--naranja2)':(color||'var(--gris7)');
   return '<div style="display:flex;flex-direction:column;gap:2px">'+
     '<span style="font-size:9px;font-weight:700;color:var(--gris4);text-transform:uppercase;letter-spacing:.05em">'+label+'</span>'+
-    '<span style="font-size:13px;color:'+(color||'var(--gris7)')+';font-weight:500">'+(val&&String(val).trim()!==''?val:'-')+'</span>'+
+    '<span style="font-size:13px;color:'+colorFinal+';font-weight:'+((vacio&&alerta)?'700':'500')+'">'+texto+'</span>'+
     '</div>';
 }
 
@@ -467,19 +481,22 @@ function toggleExpandCenso(tr){
   const r=DB.censo.find(x=>x.id===id);
   if(!r) return;
   const colCount=tr.children.length;
+  const faltan=camposFaltantes(r);
+  const bannerAlerta=faltan.length?('<div style="background:var(--naranja3);color:var(--naranja);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;font-weight:600">⚠ Faltan por capturar: '+faltan.join(', ')+'</div>'):'';
   const detTr=document.createElement('tr');
   detTr.className='detalle-row';
   detTr.innerHTML='<td colspan="'+colCount+'" style="background:var(--gris0);padding:14px 18px;cursor:default" onclick="event.stopPropagation()">'+
+    bannerAlerta+
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px">'+
     campoDetalleCenso('Paciente',r.paciente)+
     campoDetalleCenso('Expediente',r.expediente)+
     campoDetalleCenso('Edad / Sexo',(r.edad||'-')+' / '+(r.sexo||'-'))+
     campoDetalleCenso('Fecha de nacimiento',r.fechaNac)+
     campoDetalleCenso('Fecha',r.fecha)+
-    campoDetalleCenso('H. Registro',r.horaRegistro)+
-    campoDetalleCenso('H. Triage',r.horaTriage)+
-    campoDetalleCenso('H. Atencion medica',r.horaAtencion)+
-    campoDetalleCenso('H. Egreso',r.horaEgreso)+
+    campoDetalleCenso('H. Registro',r.horaRegistro,null,faltan.includes('Hora de registro'))+
+    campoDetalleCenso('H. Triage',r.horaTriage,null,faltan.includes('Hora de triage'))+
+    campoDetalleCenso('H. Atencion medica',r.horaAtencion,null,faltan.includes('Hora de atencion medica'))+
+    campoDetalleCenso('H. Egreso',r.horaEgreso,null,faltan.includes('Hora de egreso'))+
     campoDetalleCenso('Triage',r.triage)+
     campoDetalleCenso('Cambio de triage',r.cambioTriage)+
     campoDetalleCenso('Codigo activado',r.codigo&&r.codigo!=='Ninguno'?r.codigo:'-')+
