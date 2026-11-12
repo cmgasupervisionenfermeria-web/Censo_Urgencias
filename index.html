@@ -501,10 +501,14 @@ function toggleExpandCenso(tr){
     campoDetalleCenso('Cambio de triage',r.cambioTriage)+
     campoDetalleCenso('Codigo activado',r.codigo&&r.codigo!=='Ninguno'?r.codigo:'-')+
     campoDetalleCenso('Diagnostico',r.diagnostico)+
+    campoDetalleCenso('Diagnostico final / de egreso',r.diagnosticoEgreso)+
     campoDetalleCenso('Aseguradora',r.aseguradora)+
     campoDetalleCenso('Primera vez',r.primeraVez)+
     campoDetalleCenso('Medico de guardia',r.medico)+
     campoDetalleCenso('Medico interconsulta',r.interconsulta)+
+    campoDetalleCenso('Interconsulta - H. Llamado',r.horaLlamadoInterconsulta)+
+    campoDetalleCenso('Interconsulta - H. Llegada',r.horaLlegadaInterconsulta)+
+    campoDetalleCenso('Interconsulta - Tiempo de respuesta',(function(){var m=minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta);return m!==null?fmtMin(m):'-';})())+
     campoDetalleCenso('Referido por',r.referidoPor)+
     campoDetalleCenso('Enfermera responsable',r.enfermeraResponsable,'var(--rojo)')+
     campoDetalleCenso('Destino',r.destino)+
@@ -577,8 +581,11 @@ function abrirModal(id){
     '<div class="form-grid-3">'+
     '<div class="form-group"><label>Medico de guardia</label><input id="c-med" value="'+(rec.medico||'')+'"></div>'+
     '<div class="form-group"><label>Medico interconsulta</label><input id="c-inter" value="'+(rec.interconsulta||'')+'"></div>'+
+    '<div class="form-group"><label>Interconsulta - H. Llamado</label><input type="time" id="c-inter-hllam" value="'+(rec.horaLlamadoInterconsulta||'')+'"></div>'+
+    '<div class="form-group"><label>Interconsulta - H. Llegada</label><input type="time" id="c-inter-hlleg" value="'+(rec.horaLlegadaInterconsulta||'')+'"></div>'+
     '<div class="form-group"><label>Referido por medico</label><input id="c-ref" value="'+(rec.referidoPor||'')+'"></div>'+
     '<div class="form-group"><label>Enfermera responsable</label><input id="c-enf" value="'+(rec.enfermeraResponsable||'')+'"></div>'+
+    '<div class="form-group full"><label>Diagnostico final / de egreso</label><input id="c-diagegr" value="'+(rec.diagnosticoEgreso||'')+'"></div>'+
     '<div class="form-group"><label>Destino del paciente</label><select id="c-dest">'+destsOpts+'</select></div>'+
     '<div class="form-group"><label>Evento adverso</label>'+
     '<select id="c-ev" onchange="toggleEvAdverso()"><option value="">-</option><option'+(rec.eventoAdverso==='No'?' selected':'')+'>No</option><option'+(rec.eventoAdverso==='Si'?' selected':'')+'>Si</option></select></div>'+
@@ -632,8 +639,11 @@ async function guardarCenso(id){
     aseguradora:document.getElementById('c-aseg').value.trim(),
     medico:document.getElementById('c-med').value.trim(),
     interconsulta:document.getElementById('c-inter').value.trim(),
+    horaLlamadoInterconsulta:document.getElementById('c-inter-hllam').value,
+    horaLlegadaInterconsulta:document.getElementById('c-inter-hlleg').value,
     referidoPor:document.getElementById('c-ref').value.trim(),
     enfermeraResponsable:document.getElementById('c-enf').value.trim(),
+    diagnosticoEgreso:document.getElementById('c-diagegr').value.trim(),
     destino:document.getElementById('c-dest').value,
     eventoAdverso:document.getElementById('c-ev').value,
     eventoAdversoTipo:(document.getElementById('c-ev-tipo')||{value:''}).value||''
