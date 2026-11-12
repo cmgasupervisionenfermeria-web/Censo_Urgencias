@@ -222,6 +222,7 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 <select id="con-anio" onchange="renderConcentrado()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--gris3)">
 <option>2026</option><option>2027</option>
 </select>
+<button class="btn btn-ghost btn-sm" onclick="imprimirConcentrado()">&#128424; Imprimir / PDF</button>
 </div>
 </div>
 <div id="concentrado-body"></div>
@@ -233,6 +234,10 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 
 <div class="modal-bg" id="modalProc" onclick="if(event.target===this)closeModal('modalProc')">
 <div class="modal"><div class="modal-handle"></div><div id="modalProcContent"></div></div>
+</div>
+
+<div class="modal-bg" id="modalDetalleUrg" onclick="if(event.target===this)closeModal('modalDetalleUrg')">
+<div class="modal"><div class="modal-handle"></div><div id="modalDetalleUrgContent"></div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -928,6 +933,115 @@ function exportarCSVEndo(){
 
 // ─── Concentrado mensual ──────────────────────────────────────────────────────
 
+// ─── Comparativo contra el mes anterior (tendencias en el Concentrado) ──────
+// Recalcula un subconjunto de los mismos indicadores del Concentrado, pero
+// para el mes inmediatamente anterior al que se esta viendo, para poder
+// mostrar una flechita ↑/↓ junto a cada tarjeta. Se calcula aparte (no se
+// reusan las variables de renderConcentrado) para no arriesgar el codigo ya
+// probado de ese render -- esto es de solo lectura, nunca modifica DB.censo.
+function calcularResumenMesUrg(anio,mes){
+  var c=DB.censo.filter(function(r){
+    if(!r.fecha) return false;
+    var d=new Date(r.fecha+'T12:00');
+    return d.getFullYear()===anio&&d.getMonth()===mes;
+  });
+  var tRT=c.map(function(r){ return minEntre(r.horaRegistro,r.horaTriage); }).filter(function(v){ return v!==null&&v>=0; });
+  var tTA=c.map(function(r){ return minEntre(r.horaTriage,r.horaAtencion); }).filter(function(v){ return v!==null&&v>=0; });
+  var tEst=c.map(function(r){ return minEntre(r.horaRegistro,r.horaEgreso); }).filter(function(v){ return v!==null&&v>0; });
+  var conEst=c.filter(function(r){ return r.horaRegistro&&r.horaEgreso; });
+  var mas6=conEst.filter(function(r){ var m=minEntre(r.horaRegistro,r.horaEgreso); return m!==null&&m>360; }).length;
+  var defunciones=c.filter(function(r){ return r.destino==='Defuncion'; }).length;
+  var eventosAdv=c.filter(function(r){ return r.eventoAdverso==='Si'; }).length;
+  var interT=c.filter(function(r){ return r.horaLlamadoInterconsulta&&r.horaLlegadaInterconsulta; })
+    .map(function(r){ return minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta); })
+    .filter(function(v){ return v!==null&&v>=0; });
+  var conExpTodos=DB.censo.filter(function(r){ return r.expediente&&r.fecha; });
+  var reingresos=conExpTodos.filter(function(r){
+    var d0=new Date(r.fecha+'T12:00');
+    if(d0.getFullYear()!==anio||d0.getMonth()!==mes) return false;
+    return conExpTodos.some(function(o){ return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')<d0&&(d0-new Date(o.fecha+'T12:00'))<=72*3600000; });
+  }).length;
+  return {
+    total:c.length,
+    pRT:tRT.length?Math.round(tRT.reduce(function(a,b){ return a+b; },0)/tRT.length):null,
+    pTA:tTA.length?Math.round(tTA.reduce(function(a,b){ return a+b; },0)/tTA.length):null,
+    pEst:tEst.length?Math.round(tEst.reduce(function(a,b){ return a+b; },0)/tEst.length):null,
+    pct6:conEst.length?Math.round(mas6/conEst.length*1000)/10:0,
+    pctMort:c.length?Math.round(defunciones/c.length*1000)/10:0,
+    eventosAdv:eventosAdv,
+    reingresos:reingresos,
+    interProm:interT.length?Math.round(interT.reduce(function(a,b){ return a+b; },0)/interT.length):null
+  };
+}
+function tendenciaFlecha(delta,unidadFn,mesPrevLabel){
+  if(delta===0) return '<span style="font-size:10px;color:var(--gris4);margin-left:6px;vertical-align:middle">&#8212; igual que '+mesPrevLabel+'</span>';
+  var mejora=delta<0, color=mejora?'var(--verde2)':'var(--rojo2)', flecha=mejora?'&#8595;':'&#8593;';
+  return '<span style="font-size:10px;color:'+color+';margin-left:6px;font-weight:700;vertical-align:middle">'+flecha+' '+unidadFn(Math.abs(delta))+' vs '+mesPrevLabel+'</span>';
+}
+// Para minutos: menos tiempo = mejor (verde hacia abajo).
+function tendenciaMin(actual,anterior,mesPrevLabel){
+  if(actual===null||actual===undefined||anterior===null||anterior===undefined) return '';
+  return tendenciaFlecha(actual-anterior,function(v){ return fmtMin(Math.round(v)); },mesPrevLabel);
+}
+// Para porcentajes (pct6, mortalidad): menos % = mejor.
+function tendenciaPct(actual,anterior,mesPrevLabel){
+  if(actual===null||actual===undefined||anterior===null||anterior===undefined) return '';
+  var delta=Math.round((actual-anterior)*10)/10;
+  return tendenciaFlecha(delta,function(v){ return v+'pp'; },mesPrevLabel);
+}
+// Para conteos (reingresos, eventos adversos): menos = mejor.
+function tendenciaN(actual,anterior,mesPrevLabel){
+  if(actual===null||actual===undefined||anterior===null||anterior===undefined) return '';
+  return tendenciaFlecha(actual-anterior,function(v){ return String(v); },mesPrevLabel);
+}
+
+// ─── Drill-down de tarjetas del Concentrado (Reingresos, Mortalidad, Eventos
+// adversos, Interconsulta) ────────────────────────────────────────────────
+// DETALLE_URG_DATA se recalcula en cada renderConcentrado(); el modal solo
+// lee lo que ya esta ahi al momento del clic.
+let DETALLE_URG_DATA={};
+function verDetalleUrg(tipo){
+  var cfg=DETALLE_URG_DATA[tipo];
+  if(!cfg) return;
+  var html='<div class="modal-title">'+cfg.titulo+'<button class="modal-close" onclick="closeModal(\'modalDetalleUrg\')">✕</button></div>';
+  if(!cfg.rows.length){
+    html+='<div class="empty"><div class="empty-icon">🔍</div><p>Sin registros para este mes</p></div>';
+  } else {
+    html+='<div class="table-wrap"><table><thead><tr>'+cfg.headers.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'</tr></thead><tbody>'+
+      cfg.rows.map(function(row){ return '<tr style="cursor:default">'+row.map(function(c){ return '<td>'+((c===undefined||c===null||c==='')?'-':c)+'</td>'; }).join('')+'</tr>'; }).join('')+
+      '</tbody></table></div>';
+  }
+  document.getElementById('modalDetalleUrgContent').innerHTML=html;
+  document.getElementById('modalDetalleUrg').classList.add('open');
+}
+
+// ─── Vista de impresion / PDF del Concentrado ───────────────────────────────
+// Reusa el mismo <style> de la pagina (asi nunca se desincroniza si cambian
+// los estilos de las tarjetas) y abre una ventana nueva con solo el
+// contenido del Concentrado + un encabezado institucional, lista para
+// Ctrl+P / Guardar como PDF -- mismo patron ya usado en otras apps (vista
+// imprimible del navegador, sin libreria de generacion de PDF).
+function imprimirConcentrado(){
+  var elStyle=document.querySelector('style');
+  var cssText=elStyle?elStyle.textContent:'';
+  var mesTxt=document.getElementById('con-mes').selectedOptions[0].textContent;
+  var anioTxt=document.getElementById('con-anio').value;
+  var contenido=document.getElementById('concentrado-body').innerHTML;
+  var w=window.open('','_blank');
+  if(!w){ toast('Habilita las ventanas emergentes para imprimir','error'); return; }
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Concentrado Urgencias - '+mesTxt+' '+anioTxt+'</title><style>'+cssText+
+    '\nbody{padding:24px;background:#fff}\n@media print{ .ind-card,.stat-card{box-shadow:none} }'+
+    '</style></head><body>'+
+    '<div style="text-align:center;margin-bottom:18px"><div style="font-size:18px;font-weight:700;color:var(--rojo)">Centro Medico Galerias Aguascalientes</div>'+
+    '<div style="font-size:14px;color:var(--gris6)">Concentrado Mensual de Urgencias &mdash; '+mesTxt+' '+anioTxt+'</div></div>'+
+    contenido+
+    '<div style="margin-top:24px;font-size:10px;color:var(--gris4);text-align:right">Generado el '+new Date().toLocaleString('es-MX')+'</div>'+
+    '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function(){ w.print(); },350);
+}
+
 function renderConcentrado(){
   var mes=parseInt(document.getElementById('con-mes').value);
   var anio=parseInt(document.getElementById('con-anio').value);
@@ -946,6 +1060,49 @@ function renderConcentrado(){
   var pRT=tRT.length?Math.round(tRT.reduce((a,b)=>a+b,0)/tRT.length):null;
   var pTA=tTA.length?Math.round(tTA.reduce((a,b)=>a+b,0)/tTA.length):null;
   var pEst=tEst.length?Math.round(tEst.reduce((a,b)=>a+b,0)/tEst.length):null;
+
+  // ── Comparativo contra el mes anterior ──
+  var mesPrev=mes-1, anioPrev=anio;
+  if(mesPrev<0){ mesPrev=11; anioPrev=anio-1; }
+  var resumenPrev=calcularResumenMesUrg(anioPrev,mesPrev);
+  var mesPrevLabel=MESES[mesPrev].slice(0,3)+(anioPrev!==anio?' '+anioPrev:'');
+
+  // ── Tiempo Triage -> Atencion medica, desglosado por nivel de triage ──
+  // Un solo promedio general puede ocultar que los pacientes Rojo (los mas
+  // criticos) esten tardando mucho si los Verde (la mayoria, mas rapidos de
+  // atender) jalan el promedio hacia abajo -- por eso se desglosa con una
+  // meta distinta por color.
+  var TRIAGE_METAS_MIN={Rojo:10,Amarillo:30,Verde:60};
+  function triageAtencionPorColor(color){
+    var regs=censo.filter(function(r){ return r.triage===color; });
+    var tiempos=regs.map(function(r){ return minEntre(r.horaTriage,r.horaAtencion); }).filter(function(v){ return v!==null&&v>=0; });
+    var prom=tiempos.length?Math.round(tiempos.reduce(function(a,b){ return a+b; },0)/tiempos.length):null;
+    return {prom:prom,n:tiempos.length,meta:TRIAGE_METAS_MIN[color]};
+  }
+  var triageAtRojo=triageAtencionPorColor('Rojo'), triageAtAmarillo=triageAtencionPorColor('Amarillo'), triageAtVerde=triageAtencionPorColor('Verde');
+
+  // ── Grupos de edad ──
+  function enGrupoEdad(r,min,max){ var e=parseInt(r.edad,10); return !isNaN(e)&&e>=min&&e<=max; }
+  var edadPedi=censo.filter(function(r){ return enGrupoEdad(r,0,17); }).length;
+  var edadAdulto=censo.filter(function(r){ return enGrupoEdad(r,18,64); }).length;
+  var edadMayor=censo.filter(function(r){ return enGrupoEdad(r,65,200); }).length;
+  var edadSinDato=censo.length-edadPedi-edadAdulto-edadMayor;
+
+  // ── Distribucion de llegadas por hora del dia y por dia de la semana ──
+  var llegadasPorHora=Array(24).fill(0);
+  censo.forEach(function(r){
+    if(!r.horaRegistro) return;
+    var hh=parseInt(r.horaRegistro.split(':')[0],10);
+    if(!isNaN(hh)&&hh>=0&&hh<24) llegadasPorHora[hh]++;
+  });
+  var DIAS_SEMANA=['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+  var llegadasPorDia=Array(7).fill(0);
+  censo.forEach(function(r){
+    if(!r.fecha) return;
+    var d=new Date(r.fecha+'T12:00');
+    llegadasPorDia[d.getDay()]++;
+  });
+
   var rojos=censo.filter(r=>r.triage==='Rojo').length;
   var amarillos=censo.filter(r=>r.triage==='Amarillo').length;
   var verdes=censo.filter(r=>r.triage==='Verde').length;
@@ -1012,6 +1169,43 @@ function renderConcentrado(){
     return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+t+'</span><b>'+evAdvPorTipo[t]+'</b></div>';
   }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin eventos adversos este mes</div>';
 
+  // ── Datos para el drill-down clicable de Reingresos, Mortalidad,
+  //    Eventos adversos e Interconsulta (ver verDetalleUrg()) ──
+  var defuncionesLista=censo.filter(function(r){ return r.destino==='Defuncion'; });
+  DETALLE_URG_DATA.mortalidad={
+    titulo:'Defunciones &mdash; '+MESES[mes]+' '+anio,
+    headers:['Paciente','Exp.','Fecha','Triage','Diagnostico','Medico'],
+    rows:defuncionesLista.map(function(r){
+      return [r.paciente,r.expediente,r.fecha,triageChip(r.triage),r.diagnosticoEgreso||r.diagnostico,r.medico];
+    })
+  };
+  DETALLE_URG_DATA.reingresos={
+    titulo:'Reingresos en 72 horas &mdash; '+MESES[mes]+' '+anio,
+    headers:['Paciente','Exp.','Visita anterior','Dx. anterior','Regreso','Dx. de regreso','Hrs. despues'],
+    rows:reingresosDetalle.map(function(r){
+      var dReg=new Date(r.fecha+'T12:00');
+      var anteriores=conExpTodos.filter(function(o){ return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')<dReg; });
+      var anterior=anteriores.sort(function(a,b){ return new Date(b.fecha+'T12:00')-new Date(a.fecha+'T12:00'); })[0];
+      var horas=anterior?Math.round((dReg-new Date(anterior.fecha+'T12:00'))/3600000):null;
+      return [r.paciente,r.expediente,anterior?anterior.fecha:'-',anterior?(anterior.diagnosticoEgreso||anterior.diagnostico):'-',r.fecha,r.diagnosticoEgreso||r.diagnostico,horas!==null?horas:'-'];
+    })
+  };
+  DETALLE_URG_DATA.eventosAdversos={
+    titulo:'Eventos adversos &mdash; '+MESES[mes]+' '+anio,
+    headers:['Paciente','Exp.','Fecha','Tipo','Triage','Destino'],
+    rows:censo.filter(function(r){ return r.eventoAdverso==='Si'; }).map(function(r){
+      return [r.paciente,r.expediente,r.fecha,r.eventoAdversoTipo||'Sin especificar',triageChip(r.triage),r.destino];
+    })
+  };
+  DETALLE_URG_DATA.interconsulta={
+    titulo:'Interconsultas con tiempo de respuesta &mdash; '+MESES[mes]+' '+anio,
+    headers:['Paciente','Exp.','Especialidad','Medico interconsulta','Llamado','Llegada','Tiempo de respuesta'],
+    rows:interconsultas.map(function(r){
+      var m=minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta);
+      return [r.paciente,r.expediente,r.especialidadInterconsulta||'Sin especialidad',r.interconsulta,r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta,(m!==null&&m>=0)?fmtMin(m):'-'];
+    })
+  };
+
   // ── Endoscopia / Procedimientos del mes ──
   var endoMes=DB.endo.filter(function(r){ var f=r.fechaIngreso||r.fecha||''; return f>=(anio+'-'+String(mes+1).padStart(2,'0')+'-01')&&f<=(anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(new Date(anio,mes+1,0).getDate()).padStart(2,'0')); });
   var endoSala={}, endoEsp={};
@@ -1032,11 +1226,13 @@ function renderConcentrado(){
     return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+e+'</span><b>'+endoEsp[e]+'</b></div>';
   }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin procedimientos este mes</div>';
 
-  function ic(color,titulo,formula,valor,desc,barPct){
-    return '<div class="ind-card">'+
-      '<div class="ind-hdr"><div class="ind-dot" style="background:'+color+'"></div><span class="ind-ttl">'+titulo+'</span></div>'+
+  function ic(color,titulo,formula,valor,desc,barPct,opts){
+    opts=opts||{};
+    var clickAttrs=opts.onclick?(' onclick="'+opts.onclick+'" style="cursor:pointer" title="Clic para ver el detalle"'):'';
+    return '<div class="ind-card"'+clickAttrs+'>'+
+      '<div class="ind-hdr"><div class="ind-dot" style="background:'+color+'"></div><span class="ind-ttl">'+titulo+(opts.onclick?' &#128269;':'')+'</span></div>'+
       (formula?'<div class="ind-formula">'+formula+'</div>':'')+
-      '<div class="ind-val" style="color:'+color+'">'+valor+'</div>'+
+      '<div class="ind-val" style="color:'+color+'">'+valor+(opts.tendencia||'')+'</div>'+
       '<div class="ind-desc">'+desc+'</div>'+
       '<div class="ind-bar"><div class="ind-fill" style="width:'+Math.min(barPct||0,100)+'%;background:'+color+'"></div></div>'+
       '</div>';
@@ -1053,10 +1249,26 @@ function renderConcentrado(){
     '</div>'+
     '<div class="ind-grid-3" style="margin-bottom:12px">'+
     '<div class="group-title" style="grid-column:1/-1">Tiempos de Atencion</div>'+
-    ic('var(--rojo)','Registro a Triage','promedio de minutos',fmtMin(pRT),'Calculado sobre '+tRT.length+' registros',pRT!==null?Math.min(pRT/30*100,100):0)+
-    ic('var(--amarillo)','Triage a Atencion medica','promedio de minutos',fmtMin(pTA),'Calculado sobre '+tTA.length+' registros - Meta: <30 min para Rojo',pTA!==null?Math.min(pTA/60*100,100):0)+
-    ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(pEst),'Calculado sobre '+tEst.length+' registros',pEst!==null?Math.min(pEst/480*100,100):0)+
-    ic('var(--rojo2)','Pacientes con estancia > 6 horas','(pac +6h / pac con egreso) x 100',pct6+'%',mas6+' pacientes de '+conEst.length+' con hora de egreso registrada',Math.min(pct6,100))+
+    ic('var(--rojo)','Registro a Triage','promedio de minutos',fmtMin(pRT),'Calculado sobre '+tRT.length+' registros',pRT!==null?Math.min(pRT/30*100,100):0,{tendencia:tendenciaMin(pRT,resumenPrev.pRT,mesPrevLabel)})+
+    ic('var(--amarillo)','Triage a Atencion medica','promedio de minutos',fmtMin(pTA),'Calculado sobre '+tTA.length+' registros - Meta: <30 min para Rojo',pTA!==null?Math.min(pTA/60*100,100):0,{tendencia:tendenciaMin(pTA,resumenPrev.pTA,mesPrevLabel)})+
+    ic('var(--az)','Estancia total en Urgencias','promedio de minutos',fmtMin(pEst),'Calculado sobre '+tEst.length+' registros',pEst!==null?Math.min(pEst/480*100,100):0,{tendencia:tendenciaMin(pEst,resumenPrev.pEst,mesPrevLabel)})+
+    ic('var(--rojo2)','Pacientes con estancia > 6 horas','(pac +6h / pac con egreso) x 100',pct6+'%',mas6+' pacientes de '+conEst.length+' con hora de egreso registrada',Math.min(pct6,100),{tendencia:tendenciaPct(pct6,resumenPrev.pct6,mesPrevLabel)})+
+    '<div class="ind-card" style="grid-column:1/-1">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--az2)"></div><span class="ind-ttl">Triage a Atencion medica, por nivel</span></div>'+
+    '<div class="ind-formula">promedio de minutos por color de triage &mdash; metas: Rojo inmediato (&le;10 min), Amarillo &le;30 min, Verde &le;60 min</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">'+
+    [['Rojo',triageAtRojo,'var(--rojo)','var(--rojo3)'],['Amarillo',triageAtAmarillo,'var(--amarillo)','var(--amarillo3)'],['Verde',triageAtVerde,'var(--verde)','var(--verde3)']].map(function(x){
+      var nombre=x[0],d=x[1],color=x[2],bg=x[3];
+      var cumple=d.prom===null?null:d.prom<=d.meta;
+      return '<div style="flex:1;min-width:120px;background:'+bg+';border-radius:8px;padding:10px;text-align:center">'+
+        '<div style="font-size:10px;color:'+color+';font-weight:700;margin-bottom:2px">'+nombre+'</div>'+
+        '<div style="font-size:20px;font-weight:700;color:'+color+'">'+(d.prom!==null?fmtMin(d.prom):'-')+'</div>'+
+        '<div style="font-size:9px;color:'+color+'">n='+d.n+'</div>'+
+        (cumple===null?'':('<div style="font-size:9px;font-weight:700;margin-top:3px;color:'+(cumple?'var(--verde2)':'var(--rojo2)')+'">'+(cumple?'&#10003; cumple':'&#10007; excede')+' meta ('+d.meta+' min)</div>'))+
+        '</div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
     '</div>'+
     '<div class="ind-grid-3" style="margin-bottom:12px">'+
     '<div class="group-title" style="grid-column:1/-1">Clasificacion por Semaforo</div>'+
@@ -1082,7 +1294,7 @@ function renderConcentrado(){
     }).join('')+
     '</div>'+
     '</div>'+
-    ic('var(--gris5)','Mortalidad','(defunciones / total) x 100',pctMort+'%',defunciones+' defunciones de '+censo.length+' pacientes',Math.min(pctMort*5,100))+
+    ic('var(--gris5)','Mortalidad','(defunciones / total) x 100',pctMort+'%',defunciones+' defunciones de '+censo.length+' pacientes',Math.min(pctMort*5,100),{onclick:"verDetalleUrg('mortalidad')",tendencia:tendenciaPct(pctMort,resumenPrev.pctMort,mesPrevLabel)})+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
     '<div class="group-title" style="grid-column:1/-1">Codigos Activados</div>'+
@@ -1110,22 +1322,73 @@ function renderConcentrado(){
     '</div>'+
     ic('var(--az)','% Pacientes hospitalizados','(hospitalizados / total) x 100',pctHosp+'%',destHosp+' de '+censo.length+' pacientes',pctHosp)+
     ic('var(--rojo)','% Ingreso a Quirofano','(quirofano / total) x 100',pctQx+'%',destQx+' de '+censo.length+' pacientes',pctQx)+
-    ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
+    ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100),{onclick:"verDetalleUrg('reingresos')",tendencia:tendenciaN(reingresos,resumenPrev.reingresos,mesPrevLabel)})+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
     '<div class="group-title" style="grid-column:1/-1">Interconsultas y Eventos Adversos</div>'+
-    '<div class="ind-card">'+
-    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Tiempo de respuesta de interconsulta</span></div>'+
+    '<div class="ind-card" style="cursor:pointer" onclick="verDetalleUrg(\'interconsulta\')" title="Clic para ver el detalle">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Tiempo de respuesta de interconsulta &#128269;</span></div>'+
     '<div class="ind-formula">promedio de minutos (llamado -&gt; llegada)</div>'+
-    '<div class="ind-val" style="color:var(--morado)">'+(interProm!==null?fmtMin(interProm):'-')+'</div>'+
+    '<div class="ind-val" style="color:var(--morado)">'+(interProm!==null?fmtMin(interProm):'-')+tendenciaMin(interProm,resumenPrev.interProm,mesPrevLabel)+'</div>'+
     '<div class="ind-desc">Calculado sobre '+interTiempos.length+' interconsulta'+(interTiempos.length!==1?'s':'')+' con ambas horas capturadas &mdash; desglose por especialidad:</div>'+
     '<div style="margin-top:10px;max-height:160px;overflow-y:auto">'+interEspRows+'</div>'+
     '</div>'+
-    '<div class="ind-card">'+
-    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Eventos adversos por tipo</span></div>'+
-    '<div class="ind-val" style="color:var(--naranja2)">'+eventosAdv+'</div>'+
+    '<div class="ind-card" style="cursor:pointer" onclick="verDetalleUrg(\'eventosAdversos\')" title="Clic para ver el detalle">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Eventos adversos por tipo &#128269;</span></div>'+
+    '<div class="ind-val" style="color:var(--naranja2)">'+eventosAdv+tendenciaN(eventosAdv,resumenPrev.eventosAdv,mesPrevLabel)+'</div>'+
     '<div class="ind-desc">Total de eventos adversos de este mes, desglosados por tipo:</div>'+
     '<div style="margin-top:10px;max-height:160px;overflow-y:auto">'+evAdvRows+'</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="ind-grid-2" style="margin-bottom:12px">'+
+    '<div class="group-title" style="grid-column:1/-1">👥 Grupos de Edad</div>'+
+    '<div class="ind-card" style="grid-column:1/-1">'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap">'+
+    [['Pediatrico (0-17)',edadPedi,'var(--az2)'],['Adulto (18-64)',edadAdulto,'var(--verde2)'],['Adulto mayor (65+)',edadMayor,'var(--morado)']].concat(edadSinDato>0?[['Sin edad capturada',edadSinDato,'var(--gris4)']]:[]).map(function(x){
+      return '<div style="flex:1;min-width:110px;text-align:center">'+
+        '<div style="font-size:10px;color:'+x[2]+';font-weight:700;margin-bottom:2px">'+x[0]+'</div>'+
+        '<div style="font-size:22px;font-weight:700;color:'+x[2]+'">'+x[1]+'</div>'+
+        '<div style="font-size:9px;color:'+x[2]+'">'+(censo.length?Math.round(x[1]/censo.length*100):0)+'%</div></div>';
+    }).join('')+
+    '</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="ind-grid-2" style="margin-bottom:12px">'+
+    '<div class="group-title" style="grid-column:1/-1">⏰ Distribucion de Llegadas</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--az2)"></div><span class="ind-ttl">Por hora del dia</span></div>'+
+    '<div class="ind-desc" style="margin-bottom:6px">Segun hora de registro capturada</div>'+
+    '<div style="display:flex;align-items:flex-end;gap:2px;height:80px">'+
+    (function(){
+      var maxH=Math.max.apply(null,llegadasPorHora.concat([1]));
+      return llegadasPorHora.map(function(n,h){
+        var alto=n>0?Math.max(Math.round(n/maxH*100),6):0;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%" title="'+h+':00 &mdash; '+n+' paciente(s)">'+
+          '<div style="width:100%;max-width:10px;background:var(--az2);border-radius:2px 2px 0 0;height:'+alto+'%"></div>'+
+          '</div>';
+      }).join('');
+    })()+
+    '</div>'+
+    '<div style="display:flex;gap:2px;margin-top:4px">'+
+    llegadasPorHora.map(function(n,h){ return '<div style="flex:1;text-align:center;font-size:7px;color:var(--gris4)">'+(h%3===0?h:'')+'</div>'; }).join('')+
+    '</div>'+
+    '</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Por dia de la semana</span></div>'+
+    '<div class="ind-desc" style="margin-bottom:6px">Total de pacientes del mes por dia</div>'+
+    '<div style="display:flex;gap:10px">'+
+    (function(){
+      var maxD=Math.max.apply(null,llegadasPorDia.concat([1]));
+      return llegadasPorDia.map(function(n,i){
+        var alto=n>0?Math.max(Math.round(n/maxD*100),6):0;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--gris6)">'+n+'</div>'+
+          '<div style="width:100%;display:flex;align-items:flex-end;height:60px"><div style="width:65%;margin:0 auto;background:var(--morado);border-radius:3px 3px 0 0;height:'+alto+'%"></div></div>'+
+          '<div style="font-size:10px;color:var(--gris4)">'+DIAS_SEMANA[i]+'</div>'+
+          '</div>';
+      }).join('');
+    })()+
+    '</div>'+
     '</div>'+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
