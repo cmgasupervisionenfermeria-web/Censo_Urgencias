@@ -432,6 +432,40 @@ function camposInconsistentes(r){
   return avisos;
 }
 
+// ─── "Primera vez" automatico, a partir del expediente ──────────────────────
+// Un paciente es "primera vez" si, en TODO el historial de DB.censo, no hay
+// ninguna otra visita con el mismo expediente que sea cronologicamente
+// anterior (fecha menor, o misma fecha con un id menor -- los id crecen con
+// el tiempo via nid++, asi que un id menor en la misma fecha es una visita
+// registrada antes ese mismo dia). idActual se excluye de la comparacion
+// para no comparar el registro contra si mismo al editarlo.
+function calcularPrimeraVez(expediente,fecha,idActual){
+  if(!expediente||!fecha) return '';
+  var hayAnterior=DB.censo.some(function(o){
+    if(o.id===idActual) return false;
+    if(!o.expediente||o.expediente!==expediente) return false;
+    if(!o.fecha) return false;
+    if(o.fecha<fecha) return true;
+    if(o.fecha===fecha&&o.id<idActual) return true;
+    return false;
+  });
+  return hayAnterior?'No':'Si';
+}
+function actualizarPrimeraVezPreview(idActual){
+  var expInput=document.getElementById('c-exp');
+  var fechaInput=document.getElementById('c-fecha');
+  var hidden=document.getElementById('c-pvez');
+  var prev=document.getElementById('c-pvez-preview');
+  if(!expInput||!fechaInput||!hidden||!prev) return;
+  var exp=expInput.value.trim().toUpperCase();
+  var fecha=fechaInput.value;
+  if(!exp){ hidden.value=''; prev.textContent='Escribe el expediente para calcularlo'; prev.style.color='var(--gris4)'; return; }
+  var val=calcularPrimeraVez(exp,fecha,idActual||0);
+  hidden.value=val;
+  if(val==='Si'){ prev.textContent='Si — no hay visitas anteriores de este expediente'; prev.style.color='var(--verde)'; }
+  else { prev.textContent='No — este expediente ya tiene una visita anterior'; prev.style.color='var(--az)'; }
+}
+
 // ─── Render tabla censo ───────────────────────────────────────────────────────
 
 function renderCenso(){
@@ -583,13 +617,14 @@ function abrirModal(id){
     '<button class="modal-close" onclick="closeModal(\'modalCenso\')">✕</button></div>'+
     '<div class="section-lbl">Datos del registro</div>'+
     '<div class="form-grid-4">'+
-    '<div class="form-group"><label>Fecha</label><input type="date" id="c-fecha" value="'+(rec.fecha||dk(cur))+'"></div>'+
+    '<div class="form-group"><label>Fecha</label><input type="date" id="c-fecha" value="'+(rec.fecha||dk(cur))+'" onchange="actualizarPrimeraVezPreview('+(id||0)+')"></div>'+
     '<div class="form-group"><label>H. Registro</label><input type="time" id="c-hreg" value="'+valHReg+'"></div>'+
     '<div class="form-group"><label>H. Triage</label><input type="time" id="c-htriage" value="'+valHTri+'"></div>'+
     '<div class="form-group"><label>H. Atencion medica</label><input type="time" id="c-haten" value="'+valHAten+'"></div>'+
     '<div class="form-group"><label>H. Egreso</label><input type="time" id="c-hegr" value="'+valHEgr+'"></div>'+
-    '<div class="form-group"><label>Primera vez?</label>'+
-    '<select id="c-pvez"><option value="">-</option><option'+(rec.primeraVez==='Si'?' selected':'')+'>Si</option><option'+(rec.primeraVez==='No'?' selected':'')+'>No</option></select></div>'+
+    '<div class="form-group"><label>Primera vez? <span style="font-weight:400;text-transform:none;letter-spacing:0">(automatico, por expediente)</span></label>'+
+    '<div id="c-pvez-preview" style="padding:7px 10px;border:1px solid var(--gris3);border-radius:7px;background:var(--gris0);font-size:13px;font-weight:600;color:var(--gris4)">-</div>'+
+    '<input type="hidden" id="c-pvez" value="'+(rec.primeraVez||'')+'"></div>'+
     '</div>'+
     '<div class="section-lbl">Triage - Semaforo</div>'+
     '<div class="triage-btns">'+
@@ -607,7 +642,7 @@ function abrirModal(id){
     '<div class="section-lbl">Paciente</div>'+
     '<div class="form-grid-3">'+
     '<div class="form-group full"><label>Nombre del paciente</label><input id="c-pac" value="'+(rec.paciente||'')+'" placeholder="Apellidos, Nombre"></div>'+
-    '<div class="form-group"><label>N Expediente</label><input id="c-exp" value="'+(rec.expediente||'')+'" placeholder="EXP-001"></div>'+
+    '<div class="form-group"><label>N Expediente</label><input id="c-exp" value="'+(rec.expediente||'')+'" placeholder="EXP-001" oninput="actualizarPrimeraVezPreview('+(id||0)+')"></div>'+
     '<div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="c-fnac" value="'+(rec.fechaNac||'')+'" onchange="document.getElementById(\'c-edad\').value=calcEdadLocal(this.value)"></div>'+
     '<div class="form-group"><label>Edad</label><input type="number" id="c-edad" value="'+(rec.edad||'')+'" min="0" placeholder="Calculada auto."></div>'+
     '<div class="form-group"><label>Sexo</label>'+
@@ -640,6 +675,7 @@ function abrirModal(id){
     '<button class="btn btn-success" onclick="guardarCenso('+(id||0)+')">Guardar</button>'+
     '</div>';
   document.getElementById('modalCenso').classList.add('open');
+  actualizarPrimeraVezPreview(id||0);
 }
 
 function selTriage(val,btn){
@@ -661,22 +697,29 @@ async function guardarCenso(id){
   var reg=document.getElementById('c-hreg').value;
   var egr=document.getElementById('c-hegr').value;
   var estMin=minEntre(reg,egr);
+  var idFinal=id||nid++;
+  var expedienteForm=document.getElementById('c-exp').value.trim().toUpperCase();
+  var fechaForm=document.getElementById('c-fecha').value;
   var d={
-    id:id||nid++,
-    num:(function(){ var f=document.getElementById('c-fecha').value; var n=DB.censo.filter(r=>r.fecha===f).length+(id?0:1); return id?(DB.censo.find(r=>r.id===id)||{}).num||n:n; }()),
-    fecha:document.getElementById('c-fecha').value,
+    id:idFinal,
+    num:(function(){ var f=fechaForm; var n=DB.censo.filter(r=>r.fecha===f).length+(id?0:1); return id?(DB.censo.find(r=>r.id===id)||{}).num||n:n; }()),
+    fecha:fechaForm,
     horaRegistro:reg,
     horaTriage:document.getElementById('c-htriage').value,
     horaAtencion:document.getElementById('c-haten').value,
     horaEgreso:egr,
     horasEstancia:(estMin!==null&&estMin>0)?Math.round(estMin/60*100)/100:'',
-    primeraVez:document.getElementById('c-pvez').value,
+    // Calculado de forma independiente del input oculto c-pvez (que solo
+    // refleja la ultima previsualizacion mostrada): se recalcula aqui con
+    // el expediente/fecha ya leidos del formulario, por si el usuario
+    // guarda sin disparar oninput/onchange o edita muy rapido.
+    primeraVez:calcularPrimeraVez(expedienteForm,fechaForm,idFinal),
     triage:document.getElementById('c-triage').value,
     cambioTriage:document.getElementById('c-cambiotriage').value,
     codigo:document.getElementById('c-codigo').value,
     horaActivacionCodigo:document.getElementById('c-hcod').value,
     paciente:document.getElementById('c-pac').value.trim(),
-    expediente:document.getElementById('c-exp').value.trim().toUpperCase(),
+    expediente:expedienteForm,
     fechaNac:document.getElementById('c-fnac').value,
     edad:document.getElementById('c-edad').value,
     sexo:document.getElementById('c-sexo').value,
