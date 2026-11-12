@@ -243,6 +243,10 @@ const PIN = 'URG1';
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DESTINOS = ['Hospitalizacion','Quirofano','Domicilio','Alta voluntaria','Defuncion','Referencia','Observacion','Pendiente'];
 const CODIGOS = ['Ninguno','Oro / Mater','Infarto','Sepsis','Cerebro'];
+// Lista única de tipos de evento adverso -- la usan tanto el Censo como
+// Endoscopia/Procedimientos, para que el desglose del Concentrado no se
+// fragmente por variaciones de escritura entre las dos secciones.
+const EVENTOS_ADVERSOS_TIPOS = ['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'];
 // Lista única de especialidades — la misma que usa Hospitalización en Censo
 // Hospitalario, para que un procedimiento de Endoscopia/Urgencias siempre
 // se capture con una especialidad de esta lista (evita variaciones de
@@ -284,6 +288,13 @@ function minEntre(h1,h2){
   const p1=h1.split(':').map(Number), p2=h2.split(':').map(Number);
   const diff=(p2[0]*60+p2[1])-(p1[0]*60+p1[1]);
   return diff>=0?diff:diff+1440;
+}
+// Igual que minEntre pero SIN dar la vuelta a medianoche -- se usa solo para
+// detectar capturas de horas "imposibles" (ver camposInconsistentes).
+function minEntreCrudo(h1,h2){
+  if(!h1||!h2) return null;
+  const p1=h1.split(':').map(Number), p2=h2.split(':').map(Number);
+  return (p2[0]*60+p2[1])-(p1[0]*60+p1[1]);
 }
 function fmtMin(m){ if(m===null||m===undefined) return '-'; const h=Math.floor(m/60), min=m%60; return h>0?(h+'h '+min+'m'):(min+'m'); }
 function triageChip(t){ if(!t) return '-'; const m={Rojo:'triage-rojo',Amarillo:'triage-amarillo',Verde:'triage-verde'}; return '<span class="'+(m[t]||'')+'">'+t+'</span>'; }
@@ -399,6 +410,28 @@ function camposFaltantes(r){
   return faltan;
 }
 
+// ─── Alerta de horas "imposibles" (posible error de captura) ────────────────
+// No decide por si sola cual hora esta mal -- solo avisa cuando el orden de
+// dos horas que normalmente deberian ir en secuencia (registro->triage,
+// triage->atencion, llamado->llegada de interconsulta) da como resultado,
+// al dar la vuelta a medianoche, un intervalo demasiado largo para ser un
+// cruce de medianoche real. No se excluye nada de los promedios del
+// Concentrado automaticamente -- es una alerta para que se revise a mano.
+function camposInconsistentes(r){
+  const avisos=[];
+  function revisar(h1,h2,n1,n2,umbralMin){
+    if(!h1||!h2) return;
+    const crudo=minEntreCrudo(h1,h2);
+    if(crudo<0 && (crudo+1440)>umbralMin){
+      avisos.push(n2+' ('+h2+') antes de '+n1+' ('+h1+')');
+    }
+  }
+  revisar(r.horaRegistro,r.horaTriage,'hora de registro','hora de triage',180);
+  revisar(r.horaTriage,r.horaAtencion,'hora de triage','hora de atencion medica',180);
+  revisar(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta,'hora de llamado de interconsulta','hora de llegada de interconsulta',240);
+  return avisos;
+}
+
 // ─── Render tabla censo ───────────────────────────────────────────────────────
 
 function renderCenso(){
@@ -443,9 +476,11 @@ function renderCenso(){
     } else { estCelda='-'; }
     var codigoBadge=r.codigo&&r.codigo!=='Ninguno'?('<br><span style="background:var(--morado3);color:var(--morado);padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;white-space:nowrap">'+r.codigo+'</span>'):'';
     var faltanCols=camposFaltantes(r);
+    var inconsCols=camposInconsistentes(r);
     var alertaIcons='';
     if(r.eventoAdverso==='Si') alertaIcons+='<span style="color:var(--rojo);font-weight:700;font-size:15px" title="'+(r.eventoAdversoTipo||'Evento adverso')+'">!</span>';
     if(faltanCols.length) alertaIcons+=(alertaIcons?' ':'')+'<span style="color:var(--naranja2);font-weight:700;font-size:14px" title="Falta capturar: '+faltanCols.join(', ')+'">⏱</span>';
+    if(inconsCols.length) alertaIcons+=(alertaIcons?' ':'')+'<span style="color:var(--rojo2);font-weight:700;font-size:14px" title="Revisar — posible error de captura: '+inconsCols.join(', ')+'">❗</span>';
     var evCelda=alertaIcons||'-';
     return '<tr data-id="'+r.id+'" onclick="toggleExpandCenso(this)" style="'+rowStyle+'cursor:pointer">'+
       '<td style="font-weight:600;color:var(--gris4)">'+(r.num||'-')+'</td>'+
@@ -482,11 +517,14 @@ function toggleExpandCenso(tr){
   if(!r) return;
   const colCount=tr.children.length;
   const faltan=camposFaltantes(r);
+  const incons=camposInconsistentes(r);
   const bannerAlerta=faltan.length?('<div style="background:var(--naranja3);color:var(--naranja);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;font-weight:600">⚠ Faltan por capturar: '+faltan.join(', ')+'</div>'):'';
+  const bannerIncons=incons.length?('<div style="background:var(--rojo3);color:var(--rojo);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;font-weight:600">❗ Revisar — posible error de captura: '+incons.join('; ')+'</div>'):'';
   const detTr=document.createElement('tr');
   detTr.className='detalle-row';
   detTr.innerHTML='<td colspan="'+colCount+'" style="background:var(--gris0);padding:14px 18px;cursor:default" onclick="event.stopPropagation()">'+
     bannerAlerta+
+    bannerIncons+
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px">'+
     campoDetalleCenso('Paciente',r.paciente)+
     campoDetalleCenso('Expediente',r.expediente)+
@@ -506,6 +544,7 @@ function toggleExpandCenso(tr){
     campoDetalleCenso('Primera vez',r.primeraVez)+
     campoDetalleCenso('Medico de guardia',r.medico)+
     campoDetalleCenso('Medico interconsulta',r.interconsulta)+
+    campoDetalleCenso('Especialidad interconsulta',r.especialidadInterconsulta)+
     campoDetalleCenso('Interconsulta - H. Llamado',r.horaLlamadoInterconsulta)+
     campoDetalleCenso('Interconsulta - H. Llegada',r.horaLlegadaInterconsulta)+
     campoDetalleCenso('Interconsulta - Tiempo de respuesta',(function(){var m=minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta);return m!==null?fmtMin(m):'-';})())+
@@ -530,8 +569,7 @@ function abrirModal(id){
   var tv=rec.triage||'';
   var destsOpts=DESTINOS.map(function(d){ return '<option'+(rec.destino===d?' selected':'')+'>'+d+'</option>'; }).join('');
   var codOpts=CODIGOS.map(function(c){ return '<option'+(rec.codigo===c?' selected':'')+'>'+c+'</option>'; }).join('');
-  var evTipos=['Caida de paciente','Lesion por presion','Error de medicacion','Reaccion adversa a medicamento','Infeccion asociada a atencion','Evento centinela','Flebitis','Otro'];
-  var evTipoOpts=evTipos.map(function(t){ return '<option value="'+t+'"'+(rec.eventoAdversoTipo===t?' selected':'')+'>'+t+'</option>'; }).join('');
+  var evTipoOpts=EVENTOS_ADVERSOS_TIPOS.map(function(t){ return '<option value="'+t+'"'+(rec.eventoAdversoTipo===t?' selected':'')+'>'+t+'</option>'; }).join('');
 
   // FIX: al crear nuevo registro, H.Registro = hora actual; las demás vacías
   // Al editar, se usan exactamente los valores guardados (ya corregidos en cargarDatos)
@@ -581,6 +619,9 @@ function abrirModal(id){
     '<div class="form-grid-3">'+
     '<div class="form-group"><label>Medico de guardia</label><input id="c-med" value="'+(rec.medico||'')+'"></div>'+
     '<div class="form-group"><label>Medico interconsulta</label><input id="c-inter" value="'+(rec.interconsulta||'')+'"></div>'+
+    '<div class="form-group"><label>Especialidad interconsulta</label><select id="c-inter-esp"><option value="">-</option>'+
+    ESPECIALIDADES.map(function(e){ return '<option'+(rec.especialidadInterconsulta===e?' selected':'')+'>'+e+'</option>'; }).join('')+
+    '</select></div>'+
     '<div class="form-group"><label>Interconsulta - H. Llamado</label><input type="time" id="c-inter-hllam" value="'+(rec.horaLlamadoInterconsulta||'')+'"></div>'+
     '<div class="form-group"><label>Interconsulta - H. Llegada</label><input type="time" id="c-inter-hlleg" value="'+(rec.horaLlegadaInterconsulta||'')+'"></div>'+
     '<div class="form-group"><label>Referido por medico</label><input id="c-ref" value="'+(rec.referidoPor||'')+'"></div>'+
@@ -611,6 +652,10 @@ function toggleEvAdverso(){
   var val=document.getElementById('c-ev').value;
   document.getElementById('c-ev-tipo-wrap').style.display=val==='Si'?'flex':'none';
 }
+function toggleEvAdversoEndo(){
+  var val=document.getElementById('e-ev').value;
+  document.getElementById('e-ev-tipo-wrap').style.display=val==='Si'?'flex':'none';
+}
 
 async function guardarCenso(id){
   var reg=document.getElementById('c-hreg').value;
@@ -639,6 +684,7 @@ async function guardarCenso(id){
     aseguradora:document.getElementById('c-aseg').value.trim(),
     medico:document.getElementById('c-med').value.trim(),
     interconsulta:document.getElementById('c-inter').value.trim(),
+    especialidadInterconsulta:document.getElementById('c-inter-esp').value,
     horaLlamadoInterconsulta:document.getElementById('c-inter-hllam').value,
     horaLlegadaInterconsulta:document.getElementById('c-inter-hlleg').value,
     referidoPor:document.getElementById('c-ref').value.trim(),
@@ -707,11 +753,12 @@ function renderEndo(){
     if(r.estado==='Cancelado') estadoCelda='<span style="background:var(--rojo3);color:var(--rojo);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✕ Cancelado</span>';
     else if(r.estado==='Pendiente') estadoCelda='<span style="background:var(--amarillo3);color:var(--amarillo);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">⏳ Pendiente</span>';
     else estadoCelda='<span style="background:var(--verde3);color:var(--verde);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Realizado</span>';
+    var evIcon=r.eventoAdverso==='Si'?' <span style="color:var(--rojo);font-weight:700" title="'+(r.eventoAdversoTipo||'Evento adverso')+'">!</span>':'';
     return '<tr onclick="requirePin(()=>abrirModalProcedimiento('+r.id+'))">'+
       '<td><b>'+(r.sala||'-')+'</b></td>'+
       '<td style="font-size:11px">'+(r.fechaIngreso||'-')+'</td>'+
       '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.horaIngreso||'-')+'</td>'+
-      '<td style="font-weight:500;max-width:130px">'+(r.nombre||'-')+'</td>'+
+      '<td style="font-weight:500;max-width:130px">'+(r.nombre||'-')+evIcon+'</td>'+
       '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(r.expediente||'-')+'</td>'+
       '<td style="text-align:center">'+(r.sexo||'-')+'</td>'+
       '<td style="text-align:center">'+(r.edad||'-')+'</td>'+
@@ -759,6 +806,13 @@ function abrirModalProcedimiento(id){
     '<option value="Cancelado"'+(rec.estado==='Cancelado'?' selected':'')+'>✕ Cancelado</option>'+
     '</select></div>'+
     '<div class="form-group"><label>Aseguradora</label><input id="e-aseg" value="'+(rec.aseguradora||'')+'"></div>'+
+    '<div class="form-group"><label>Evento adverso</label>'+
+    '<select id="e-ev" onchange="toggleEvAdversoEndo()"><option value="">-</option><option'+(rec.eventoAdverso==='No'?' selected':'')+'>No</option><option'+(rec.eventoAdverso==='Si'?' selected':'')+'>Si</option></select></div>'+
+    '<div class="form-group" id="e-ev-tipo-wrap" style="display:'+(rec.eventoAdverso==='Si'?'flex':'none')+';flex-direction:column;gap:3px">'+
+    '<label>Tipo de evento adverso</label>'+
+    '<select id="e-ev-tipo"><option value="">Selecciona</option>'+
+    EVENTOS_ADVERSOS_TIPOS.map(function(t){ return '<option value="'+t+'"'+(rec.eventoAdversoTipo===t?' selected':'')+'>'+t+'</option>'; }).join('')+
+    '</select></div>'+
     '</div>'+
     '<div class="form-actions">'+
     (id?'<button class="btn btn-danger btn-sm" onclick="eliminar('+id+',\'endo\')">Eliminar</button>':'')+
@@ -788,7 +842,9 @@ async function guardarProcedimiento(id){
     tiempoQx:document.getElementById('e-tqx').value,
     tipo:document.getElementById('e-tipo').value,
     estado:document.getElementById('e-estado').value,
-    aseguradora:document.getElementById('e-aseg').value.trim()
+    aseguradora:document.getElementById('e-aseg').value.trim(),
+    eventoAdverso:document.getElementById('e-ev').value,
+    eventoAdversoTipo:(document.getElementById('e-ev-tipo')||{value:''}).value||''
   };
   if(id){ if(!fecha) d.fecha=(DB.endo.find(r=>r.id===id)||{}).fecha||dk(cur); const i=DB.endo.findIndex(r=>r.id===id); if(i>-1) DB.endo[i]=d; }
   else DB.endo.push(d);
@@ -867,13 +923,51 @@ function renderConcentrado(){
   var destRef=censo.filter(r=>r.destino==='Referencia').length;
   var pctHosp=censo.length?Math.round(destHosp/censo.length*1000)/10:0;
   var pctQx=censo.length?Math.round(destQx/censo.length*1000)/10:0;
-  var conExp=censo.filter(r=>r.expediente&&r.fecha);
-  var reingresos=conExp.filter(function(r){
+  // FIX: los reingresos se detectan sobre TODO el historial (DB.censo), no
+  // solo sobre los registros ya filtrados de este mes -- de lo contrario un
+  // paciente que regresa cruzando fin de mes (ej. visto el 30 de mayo,
+  // regresa el 1 de junio) no se detectaba en NINGUNO de los dos meses. Y el
+  // conteo se atribuye a la visita de REGRESO (la que realmente constituye
+  // el reingreso), no a la visita original -- antes se marcaba al revés.
+  var conExpTodos=DB.censo.filter(r=>r.expediente&&r.fecha);
+  var reingresosDetalleTodos=conExpTodos.filter(function(r){
     var d0=new Date(r.fecha+'T12:00');
-    return conExp.some(function(o){
-      return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')>d0&&(new Date(o.fecha+'T12:00')-d0)<=72*3600000;
+    return conExpTodos.some(function(o){
+      return o.id!==r.id&&o.expediente===r.expediente&&new Date(o.fecha+'T12:00')<d0&&(d0-new Date(o.fecha+'T12:00'))<=72*3600000;
     });
-  }).length;
+  });
+  var reingresosDetalle=reingresosDetalleTodos.filter(function(r){
+    var d=new Date(r.fecha+'T12:00');
+    return d.getFullYear()===anio&&d.getMonth()===mes;
+  });
+  var reingresos=reingresosDetalle.length;
+
+  // ── Tiempo de respuesta de interconsulta (general y por especialidad) ──
+  var interconsultas=censo.filter(function(r){ return r.horaLlamadoInterconsulta&&r.horaLlegadaInterconsulta; });
+  var interTiempos=interconsultas.map(function(r){ return minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta); }).filter(function(v){ return v!==null&&v>=0; });
+  var interProm=interTiempos.length?Math.round(interTiempos.reduce(function(a,b){ return a+b; },0)/interTiempos.length):null;
+  var interPorEsp={};
+  interconsultas.forEach(function(r){
+    var m=minEntre(r.horaLlamadoInterconsulta,r.horaLlegadaInterconsulta);
+    if(m===null||m<0) return;
+    var esp=r.especialidadInterconsulta||'Sin especialidad';
+    if(!interPorEsp[esp]) interPorEsp[esp]={suma:0,n:0};
+    interPorEsp[esp].suma+=m; interPorEsp[esp].n++;
+  });
+  var interEspRows=Object.keys(interPorEsp).sort(function(a,b){ return (interPorEsp[b].suma/interPorEsp[b].n)-(interPorEsp[a].suma/interPorEsp[a].n); }).map(function(e){
+    var prom=Math.round(interPorEsp[e].suma/interPorEsp[e].n);
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+e+' <span style="color:var(--gris4)">('+interPorEsp[e].n+')</span></span><b>'+fmtMin(prom)+'</b></div>';
+  }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin interconsultas con ambas horas capturadas este mes</div>';
+
+  // ── Eventos adversos por tipo ──
+  var evAdvPorTipo={};
+  censo.filter(function(r){ return r.eventoAdverso==='Si'; }).forEach(function(r){
+    var t=r.eventoAdversoTipo||'Sin especificar';
+    evAdvPorTipo[t]=(evAdvPorTipo[t]||0)+1;
+  });
+  var evAdvRows=Object.keys(evAdvPorTipo).sort(function(a,b){ return evAdvPorTipo[b]-evAdvPorTipo[a]; }).map(function(t){
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+t+'</span><b>'+evAdvPorTipo[t]+'</b></div>';
+  }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin eventos adversos este mes</div>';
 
   // ── Endoscopia / Procedimientos del mes ──
   var endoMes=DB.endo.filter(function(r){ var f=r.fechaIngreso||r.fecha||''; return f>=(anio+'-'+String(mes+1).padStart(2,'0')+'-01')&&f<=(anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(new Date(anio,mes+1,0).getDate()).padStart(2,'0')); });
@@ -890,6 +984,7 @@ function renderConcentrado(){
   var endoPendientes=endoMes.filter(function(r){ return r.estado==='Pendiente'; }).length;
   var endoRealizados=endoMes.filter(function(r){ return r.estado==='Realizado'||!r.estado; }).length;
   var endoPctCancelados=endoMes.length>0?Math.round(endoCancelados/endoMes.length*1000)/10:0;
+  var endoEventosAdv=endoMes.filter(function(r){ return r.eventoAdverso==='Si'; }).length;
   var endoEspRows=Object.keys(endoEsp).sort(function(a,b){ return endoEsp[b]-endoEsp[a]; }).map(function(e){
     return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:12px"><span>'+e+'</span><b>'+endoEsp[e]+'</b></div>';
   }).join('')||'<div style="color:var(--gris4);font-size:12px;padding:6px 0">Sin procedimientos este mes</div>';
@@ -975,6 +1070,22 @@ function renderConcentrado(){
     ic('var(--naranja2)','Reingresos en 72 hrs','mismo expediente con 2 visitas dentro de 72h',reingresos,reingresos+' paciente'+(reingresos!==1?'s':'')+' regresaron en menos de 72 horas',Math.min(reingresos/(censo.length||1)*100*5,100))+
     '</div>'+
     '<div class="ind-grid-2" style="margin-bottom:12px">'+
+    '<div class="group-title" style="grid-column:1/-1">Interconsultas y Eventos Adversos</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Tiempo de respuesta de interconsulta</span></div>'+
+    '<div class="ind-formula">promedio de minutos (llamado -&gt; llegada)</div>'+
+    '<div class="ind-val" style="color:var(--morado)">'+(interProm!==null?fmtMin(interProm):'-')+'</div>'+
+    '<div class="ind-desc">Calculado sobre '+interTiempos.length+' interconsulta'+(interTiempos.length!==1?'s':'')+' con ambas horas capturadas &mdash; desglose por especialidad:</div>'+
+    '<div style="margin-top:10px;max-height:160px;overflow-y:auto">'+interEspRows+'</div>'+
+    '</div>'+
+    '<div class="ind-card">'+
+    '<div class="ind-hdr"><div class="ind-dot" style="background:var(--naranja2)"></div><span class="ind-ttl">Eventos adversos por tipo</span></div>'+
+    '<div class="ind-val" style="color:var(--naranja2)">'+eventosAdv+'</div>'+
+    '<div class="ind-desc">Total de eventos adversos de este mes, desglosados por tipo:</div>'+
+    '<div style="margin-top:10px;max-height:160px;overflow-y:auto">'+evAdvRows+'</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="ind-grid-2" style="margin-bottom:12px">'+
     '<div class="group-title" style="grid-column:1/-1">🔬 Endoscopia/Procedimientos — '+MESES[mes]+' '+anio+'</div>'+
     '<div class="ind-card">'+
     '<div class="ind-hdr"><div class="ind-dot" style="background:var(--az)"></div><span class="ind-ttl">Procedimientos del mes</span></div>'+
@@ -985,7 +1096,7 @@ function renderConcentrado(){
     '<div style="flex:1;min-width:70px;text-align:center"><div style="font-size:9px;color:var(--rojo);font-weight:700">✕ Cancelados</div><div style="font-size:20px;font-weight:700;color:var(--rojo)">'+endoCancelados+'</div></div>'+
     '<div style="flex:1;min-width:70px;text-align:center"><div style="font-size:9px;color:var(--amarillo);font-weight:700">⏳ Pendientes</div><div style="font-size:20px;font-weight:700;color:var(--amarillo)">'+endoPendientes+'</div></div>'+
     '</div>'+
-    '<div class="ind-desc" style="margin-top:8px">Tasa de cancelacion: <b>'+endoPctCancelados+'%</b> &middot; Tiempo quirurgico promedio: <b>'+(endoTqxProm!==null?endoTqxProm+' min':'-')+'</b></div>'+
+    '<div class="ind-desc" style="margin-top:8px">Tasa de cancelacion: <b>'+endoPctCancelados+'%</b> &middot; Tiempo quirurgico promedio: <b>'+(endoTqxProm!==null?endoTqxProm+' min':'-')+'</b> &middot; Eventos adversos: <b style="color:'+(endoEventosAdv>0?'var(--rojo)':'var(--gris5)')+'">'+endoEventosAdv+'</b></div>'+
     '</div>'+
     '<div class="ind-card">'+
     '<div class="ind-hdr"><div class="ind-dot" style="background:var(--morado)"></div><span class="ind-ttl">Procedimientos por especialidad</span></div>'+
