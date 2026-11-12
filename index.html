@@ -160,7 +160,7 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 <table>
 <thead><tr>
 <th>#</th><th>Triage</th><th>Paciente</th><th>Exp.</th><th>Diagnostico</th>
-<th>Estancia</th><th>Destino</th><th>Alertas</th><th></th>
+<th>Estancia</th><th>Destino</th><th></th><th>Alertas</th><th></th>
 </tr></thead>
 <tbody id="censo-tbody"></tbody>
 </table>
@@ -238,6 +238,10 @@ style="width:100%;padding:12px;font-size:20px;text-align:center;border:2px solid
 
 <div class="modal-bg" id="modalDetalleUrg" onclick="if(event.target===this)closeModal('modalDetalleUrg')">
 <div class="modal"><div class="modal-handle"></div><div id="modalDetalleUrgContent"></div></div>
+</div>
+
+<div class="modal-bg" id="modalEgreso" onclick="if(event.target===this)closeModal('modalEgreso')">
+<div class="modal"><div class="modal-handle"></div><div id="modalEgresoContent"></div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -529,6 +533,7 @@ function renderCenso(){
       '<td style="max-width:180px;font-size:12px;color:var(--gris5)">'+(r.diagnostico||'-')+'</td>'+
       '<td style="text-align:center">'+estCelda+'</td>'+
       '<td style="font-size:12px;font-weight:500">'+(r.destino||'-')+'</td>'+
+      '<td style="text-align:center"><button class="btn btn-sm" style="background:var(--az3);color:var(--az);padding:4px 8px" onclick="event.stopPropagation();requirePin(()=>abrirModalEgreso('+r.id+'))" title="Registrar egreso">🚪 Egreso</button></td>'+
       '<td style="text-align:center">'+evCelda+'</td>'+
       '<td style="text-align:center;color:var(--gris4);font-size:14px">›</td>'+
       '</tr>';
@@ -593,11 +598,59 @@ function toggleExpandCenso(tr){
     campoDetalleCenso('Evento adverso',r.eventoAdverso==='Si'?(r.eventoAdversoTipo||'Si'):'No')+
     '</div>'+
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--gris2)">'+
+    '<button class="btn btn-sm" style="background:var(--az3);color:var(--az)" onclick="requirePin(()=>abrirModalEgreso('+id+'))">🚪 Egreso</button>'+
     '<button class="btn btn-ghost btn-sm" onclick="requirePin(()=>abrirModal('+id+'))">Editar</button>'+
     '<button class="btn btn-danger btn-sm" onclick="requirePin(()=>eliminar('+id+',\'censo\'))">Eliminar</button>'+
     '</div>'+
     '</td>';
   tr.after(detTr);
+}
+
+// ─── Egreso rapido (igual que el boton de Censo Hospitalario) ───────────────
+// Para no depender de que alguien abra el formulario completo solo para
+// llenar diagnostico de egreso / destino / hora de egreso, este modal
+// enfocado solo pide esos 3 campos y coloca la hora actual automaticamente
+// (editable, por si el egreso se registra un poco despues de que ocurrio).
+// Al guardar, solo sobreescribe esos 3 campos del registro -- el resto del
+// registro (incluida la fecha y hora de registro) queda exactamente igual.
+function abrirModalEgreso(id){
+  var rec=DB.censo.find(function(r){ return r.id===id; });
+  if(!rec) return;
+  var destsOpts=DESTINOS.map(function(d){ return '<option'+(rec.destino===d?' selected':'')+'>'+d+'</option>'; }).join('');
+  document.getElementById('modalEgresoContent').innerHTML=
+    '<div class="modal-title">🚪 Egreso de paciente'+
+    '<button class="modal-close" onclick="closeModal(\'modalEgreso\')">✕</button></div>'+
+    '<div style="background:var(--az3);color:var(--az);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;font-weight:600">'+(rec.paciente||'Paciente')+' &middot; Exp. '+(rec.expediente||'-')+' &middot; Triage '+(rec.triage||'-')+'</div>'+
+    '<div class="form-grid">'+
+    '<div class="form-group"><label>Fecha de egreso</label><input value="'+fmt(new Date())+'" disabled style="background:var(--gris1);color:var(--gris5)"></div>'+
+    '<div class="form-group"><label>Hora de egreso <span style="font-weight:400;text-transform:none;letter-spacing:0">(automatico, editable)</span></label><input type="time" id="eg-hora" value="'+(rec.horaEgreso||horaActual())+'"></div>'+
+    '<div class="form-group full"><label>Diagnostico final / de egreso</label><input id="eg-diag" value="'+(rec.diagnosticoEgreso||'')+'" placeholder="Ej. Gastroenteritis aguda resuelta"></div>'+
+    '<div class="form-group full"><label>Destino del paciente</label><select id="eg-dest">'+destsOpts+'</select></div>'+
+    '</div>'+
+    '<div class="form-actions">'+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalEgreso\')">Cancelar</button>'+
+    '<button class="btn btn-success" onclick="confirmarEgresoUrg('+id+')">Confirmar egreso</button>'+
+    '</div>';
+  document.getElementById('modalEgreso').classList.add('open');
+}
+
+async function confirmarEgresoUrg(id){
+  var i=DB.censo.findIndex(function(r){ return r.id===id; });
+  if(i<0) return;
+  // Se copia el registro completo y solo se sobreescriben estos 3 campos --
+  // nunca se toca fecha, horaRegistro, triage, diagnostico de ingreso, etc.
+  var d=Object.assign({},DB.censo[i]);
+  d.horaEgreso=document.getElementById('eg-hora').value;
+  d.diagnosticoEgreso=document.getElementById('eg-diag').value.trim();
+  d.destino=document.getElementById('eg-dest').value;
+  DB.censo[i]=d;
+  showLoader('Guardando egreso...');
+  const resp=await apiCall({action:'update',section:'censo',record:d});
+  hideLoader();
+  if(resp&&resp.ok===false){ return; }
+  closeModal('modalEgreso');
+  renderCenso();
+  toast('Egreso registrado');
 }
 
 // ─── Modal de registro ────────────────────────────────────────────────────────
@@ -676,6 +729,7 @@ function abrirModal(id){
     '</div>'+
     '<div class="form-actions">'+
     (id?'<button class="btn btn-danger btn-sm" onclick="eliminar('+id+',\'censo\')">Eliminar</button>':'')+
+    (id?'<button class="btn btn-sm" style="background:var(--az3);color:var(--az)" onclick="closeModal(\'modalCenso\');abrirModalEgreso('+id+')">🚪 Egreso</button>':'')+
     '<button class="btn btn-ghost" onclick="closeModal(\'modalCenso\')">Cancelar</button>'+
     '<button class="btn btn-success" onclick="guardarCenso('+(id||0)+')">Guardar</button>'+
     '</div>';
